@@ -55,4 +55,14 @@ erDiagram
 
 ## REALISATION
 
+### Dépendances node
+
+1. pg (postgres)
+2. dotenv
+3. express
+4. cors
+5. jsonwebtoken
+6. joi
+7. 
+
 ## DEPLOIEMENT
