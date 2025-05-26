@@ -63,6 +63,6 @@ erDiagram
 4. cors
 5. jsonwebtoken
 6. joi
-7. 
+7. bcrypt
 
 ## DEPLOIEMENT
