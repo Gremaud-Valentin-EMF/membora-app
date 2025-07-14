@@ -117,9 +117,13 @@ L'application vise à simplifier la gestion administrative des associations en a
 ```mermaid
 erDiagram
 
-  tenants {
+tenants {
     int id PK
     string nom
+    string logo_url
+    string primary_color
+    string secondary_color
+    date created_at
   }
 
   membres {
