@@ -1,25 +1,19 @@
 const express = require("express");
 const router = express.Router();
 
+// Import des sous-routeurs (à créer)
 const authRoutes = require("./authRoutes");
+const membreRoutes = require("./membreRoutes");
+const evenementRoutes = require("./evenementRoutes");
+const articleRoutes = require("./articleRoutes");
+const categorieRoutes = require("./categorieRoutes");
+const participationRoutes = require("./participationRoutes");
+
 router.use("/auth", authRoutes);
-
-const membresRoutes = require("./membresRoutes");
-router.use("/membres", membresRoutes);
-
-const evenementsRoutes = require("./evenementsRoutes");
-router.use("/evenements", evenementsRoutes);
-
-const categoriesRoutes = require("./categoriesRoutes");
-router.use("/categories", categoriesRoutes);
-
-const permissionsRoutes = require("./permissionsRoutes");
-router.use("/permissions", permissionsRoutes);
-
-const presencesRoutes = require("./presencesRoutes");
-router.use("/presences", presencesRoutes);
-
-const adminsRoutes = require("./adminsRoutes");
-router.use("/admins", adminsRoutes);
+router.use("/membres", membreRoutes);
+router.use("/evenements", evenementRoutes);
+router.use("/articles", articleRoutes);
+router.use("/categories", categorieRoutes);
+router.use("/participations", participationRoutes);
 
 module.exports = router;

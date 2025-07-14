@@ -8,6 +8,37 @@ const cors = require("cors");
 const apiRouter = require("./app/routes/apiRouter");
 const port = process.env.PORT;
 
+const swaggerUi = require("swagger-ui-express");
+const swaggerJSDoc = require("swagger-jsdoc");
+
+const swaggerDefinition = {
+  openapi: "3.0.0",
+  info: {
+    title: "Membora API",
+    version: "1.0.0",
+    description: "Documentation interactive de l’API Membora",
+  },
+  servers: [{ url: `http://localhost:${process.env.PORT || 3001}/api` }],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+      },
+    },
+  },
+  security: [{ bearerAuth: [] }],
+};
+
+const swaggerOptions = {
+  swaggerDefinition,
+  apis: ["./app/routes/*.js"], // Ajoute des JSDoc dans les routes pour la doc
+};
+
+const swaggerSpec = swaggerJSDoc(swaggerOptions);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.use(cors());
 app.use(express.json());
 app.use("/api", apiRouter);
