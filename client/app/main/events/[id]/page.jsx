@@ -211,7 +211,7 @@ export default function EventDetailPage() {
             </Button>
           </Link>
 
-          {user.role === "responsable" && (
+          {(user.role === "responsable" || user.role === "sous-admin") && (
             <>
               <Link href={`/main/events/${event.id}/edit`}>
                 <Button variant="secondary">Modifier l'événement</Button>
@@ -239,9 +239,15 @@ export default function EventDetailPage() {
               >
                 <div>
                   <p className="font-medium text-gray-900">
-                    Membre ID: {participation.membre_id}
+                    {participation.membre_nom ||
+                      `Membre ID: ${participation.membre_id}`}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  {participation.membre_email && (
+                    <p className="text-sm text-gray-600">
+                      {participation.membre_email}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500">
                     Statut: {participation.present ? "Présent" : "Absent"}
                   </p>
                 </div>

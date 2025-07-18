@@ -21,7 +21,10 @@ const participationService = {
   },
   async getByEvenement(evenement_id) {
     const result = await pool.query(
-      "SELECT * FROM participations WHERE evenement_id = $1",
+      `SELECT p.*, m.nom as membre_nom, m.email as membre_email 
+       FROM participations p 
+       JOIN membres m ON p.membre_id = m.id 
+       WHERE p.evenement_id = $1`,
       [evenement_id]
     );
     return result.rows;
