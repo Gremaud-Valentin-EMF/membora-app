@@ -8,10 +8,12 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:prod": "NODE_ENV=production node server.js",
+    "dev": "NODE_ENV=development node server.js"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
@@ -20,5 +22,15 @@
     "pg": "^8.16.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
+  },
+  "overrides": {
+    "inflight": "npm:lru-cache@^10.0.0",
+    "lodash.get": "npm:lodash@^4.17.21",
+    "lodash.isequal": "npm:lodash@^4.17.21",
+    "glob": "npm:glob@^10.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

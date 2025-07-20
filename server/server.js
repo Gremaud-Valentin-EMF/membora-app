@@ -16,9 +16,18 @@ const swaggerDefinition = {
   info: {
     title: "Membora API",
     version: "1.0.0",
-    description: "Documentation interactive de l’API Membora",
+    description: "Documentation interactive de l'API Membora",
   },
-  servers: [{ url: `http://localhost:${process.env.PORT || 3001}/api` }],
+  servers: [
+    {
+      url: "https://valentingremaud.emf-informatique.ch/api",
+      description: "Serveur de production",
+    },
+    {
+      url: `http://localhost:${process.env.PORT || 3001}/api`,
+      description: "Serveur de développement local",
+    },
+  ],
   components: {
     securitySchemes: {
       bearerAuth: {
@@ -39,7 +48,16 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.use(cors());
+// Configuration CORS simplifiée et permissive
+const corsOptions = {
+  origin: true, // Autoriser toutes les origines
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use("/api", apiRouter);
 
