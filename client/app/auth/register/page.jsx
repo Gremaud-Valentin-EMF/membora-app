@@ -15,7 +15,7 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     role: "membre",
-    tenant_id: 1, // Par défaut, on utilise le tenant 1
+    tenant_id: 6, // Tenant "Jeunesse du Pâquier"
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

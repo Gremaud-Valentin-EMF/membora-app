@@ -14,7 +14,12 @@ const participationService = {
   },
   async getByMembre(membre_id) {
     const result = await pool.query(
-      "SELECT * FROM participations WHERE membre_id = $1",
+      `
+      SELECT p.*, m.nom as membre_nom, m.email as membre_email 
+      FROM participations p 
+      JOIN membres m ON p.membre_id = m.id 
+      WHERE p.membre_id = $1
+    `,
       [membre_id]
     );
     return result.rows;
@@ -30,7 +35,11 @@ const participationService = {
     return result.rows;
   },
   async getAll() {
-    const result = await pool.query("SELECT * FROM participations");
+    const result = await pool.query(`
+      SELECT p.*, m.nom as membre_nom, m.email as membre_email 
+      FROM participations p 
+      JOIN membres m ON p.membre_id = m.id
+    `);
     return result.rows;
   },
 };

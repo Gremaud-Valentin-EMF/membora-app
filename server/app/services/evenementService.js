@@ -2,19 +2,29 @@ const pool = require("../config/db");
 
 const evenementService = {
   async getAll() {
-    const result = await pool.query("SELECT * FROM evenements");
+    const result = await pool.query(`
+      SELECT *, 
+             TO_CHAR(date, 'YYYY-MM-DD"T"HH24:MI:SS') as date_formatted
+      FROM evenements
+    `);
     return result.rows;
   },
   async getById(id) {
-    const result = await pool.query("SELECT * FROM evenements WHERE id = $1", [
-      id,
-    ]);
+    const result = await pool.query(
+      `
+      SELECT *, 
+             TO_CHAR(date, 'YYYY-MM-DD"T"HH24:MI:SS') as date_formatted
+      FROM evenements WHERE id = $1
+    `,
+      [id]
+    );
     return result.rows[0];
   },
   async create({ nom, date, categorie_id, statut, tenant_id }) {
     const result = await pool.query(
       `INSERT INTO evenements (nom, date, categorie_id, statut, tenant_id)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING *, TO_CHAR(date, 'YYYY-MM-DD"T"HH24:MI:SS') as date_formatted`,
       [nom, date, categorie_id, statut, tenant_id]
     );
     return result.rows[0];
@@ -24,7 +34,11 @@ const evenementService = {
     const values = Object.values(data);
     if (fields.length === 0) {
       const result = await pool.query(
-        "SELECT * FROM evenements WHERE id = $1",
+        `
+        SELECT *, 
+               TO_CHAR(date, 'YYYY-MM-DD"T"HH24:MI:SS') as date_formatted
+        FROM evenements WHERE id = $1
+      `,
         [id]
       );
       return result.rows[0];
@@ -33,7 +47,7 @@ const evenementService = {
     const result = await pool.query(
       `UPDATE evenements SET ${setClause} WHERE id = $${
         fields.length + 1
-      } RETURNING *`,
+      } RETURNING *, TO_CHAR(date, 'YYYY-MM-DD"T"HH24:MI:SS') as date_formatted`,
       [...values, id]
     );
     return result.rows[0];
@@ -43,7 +57,11 @@ const evenementService = {
   },
   async getByCategorie(categorie_id) {
     const result = await pool.query(
-      "SELECT * FROM evenements WHERE categorie_id = $1",
+      `
+      SELECT *, 
+             TO_CHAR(date, 'YYYY-MM-DD"T"HH24:MI:SS') as date_formatted
+      FROM evenements WHERE categorie_id = $1
+    `,
       [categorie_id]
     );
     return result.rows;

@@ -99,6 +99,11 @@ const Navbar = () => {
                           Catégories
                         </Button>
                       </Link>
+                      <Link href="/main/articles">
+                        <Button variant="ghost" size="sm">
+                          Articles
+                        </Button>
+                      </Link>
                     </>
                   )}
                 </>
@@ -223,6 +228,11 @@ const Navbar = () => {
                       <Link href="/main/categories">
                         <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                           Catégories
+                        </button>
+                      </Link>
+                      <Link href="/main/articles">
+                        <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          Articles
                         </button>
                       </Link>
                     </>

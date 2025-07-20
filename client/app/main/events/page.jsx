@@ -61,7 +61,9 @@ export default function EventsPage() {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    // Utiliser date_formatted si disponible, sinon dateString
+    const dateToFormat = dateString || dateString;
+    const date = new Date(dateToFormat);
     return date.toLocaleDateString("fr-FR", {
       day: "numeric",
       month: "long",
@@ -173,7 +175,7 @@ export default function EventsPage() {
                       {event.nom}
                     </h3>
                     <p className="text-sm text-gray-600 mb-2">
-                      📅 {formatDate(event.date)}
+                      📅 {formatDate(event.date_formatted || event.date)}
                     </p>
                     <p className="text-sm text-gray-500">
                       📂 {getCategoryName(event.categorie_id)}
@@ -183,9 +185,12 @@ export default function EventsPage() {
                     </p>
                   </div>
 
-                  <div className="flex space-x-2">
-                    <Link href={`/main/events/${event.id}`} className="flex-1">
-                      <Button variant="secondary" size="sm" className="w-full">
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/main/events/${event.id}`}>
+                      <Button
+                        size="sm"
+                        primaryColor={tenant?.primary_color || "#00AF00"}
+                      >
                         Voir détails
                       </Button>
                     </Link>
@@ -198,11 +203,11 @@ export default function EventsPage() {
                             Modifier
                           </Button>
                         </Link>
+
                         <Button
                           variant="secondary"
                           size="sm"
                           onClick={() => handleDeleteEvent(event.id)}
-                          className="text-red-600 hover:text-red-700"
                         >
                           Supprimer
                         </Button>

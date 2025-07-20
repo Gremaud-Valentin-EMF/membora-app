@@ -118,6 +118,29 @@ const role = require("../middlewares/roleMiddleware");
  *         description: Membre redevenu simple membre
  */
 
+/**
+ * @swagger
+ * /membres/public/{id}:
+ *   get:
+ *     summary: Récupère un membre par son id (public, données limitées)
+ *     tags: [Membres]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Détail du membre (nom seulement)
+ *       404:
+ *         description: Membre non trouvé
+ */
+
+// Routes publiques (sans authentification)
+router.get("/public/:id", membreController.getPublicById);
+
+// Routes authentifiées
 router.get(
   "/",
   auth,

@@ -209,6 +209,10 @@ class ApiService {
     return this.get(`/tenants/${id}`);
   }
 
+  async getTenantBySlug(slug) {
+    return this.get(`/tenants/slug/${slug}`);
+  }
+
   async createTenant(tenantData) {
     return this.post("/tenants", tenantData);
   }

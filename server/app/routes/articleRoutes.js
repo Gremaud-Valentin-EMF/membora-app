@@ -13,9 +13,39 @@ const role = require("../middlewares/roleMiddleware");
 
 /**
  * @swagger
+ * /articles/public:
+ *   get:
+ *     summary: Liste tous les articles publiés (public)
+ *     tags: [Articles]
+ *     responses:
+ *       200:
+ *         description: Liste des articles publiés
+ */
+
+/**
+ * @swagger
+ * /articles/public/{id}:
+ *   get:
+ *     summary: Récupère un article publié par son id (public)
+ *     tags: [Articles]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Détail de l'article
+ *       404:
+ *         description: Article non trouvé
+ */
+
+/**
+ * @swagger
  * /articles:
  *   get:
- *     summary: Liste tous les articles
+ *     summary: Liste tous les articles (authentifié)
  *     tags: [Articles]
  *     security: [ { bearerAuth: [] } ]
  *     responses:
@@ -40,7 +70,7 @@ const role = require("../middlewares/roleMiddleware");
  * @swagger
  * /articles/{id}:
  *   get:
- *     summary: Récupère un article par son id
+ *     summary: Récupère un article par son id (authentifié)
  *     tags: [Articles]
  *     security: [ { bearerAuth: [] } ]
  *     parameters:
@@ -124,6 +154,11 @@ const role = require("../middlewares/roleMiddleware");
  *         description: Article désarchivé
  */
 
+// Routes publiques (sans authentification)
+router.get("/public", articleController.getPublic);
+router.get("/public/:id", articleController.getPublicById);
+
+// Routes authentifiées
 router.get("/", auth, articleController.getAll);
 router.get("/:id", auth, articleController.getById);
 router.post("/", auth, role(["sous-admin"]), articleController.create);
@@ -133,13 +168,13 @@ router.post(
   "/:id/archiver",
   auth,
   role(["sous-admin"]),
-  articleController.archiver
+  articleController.archive
 );
 router.post(
   "/:id/desarchiver",
   auth,
   role(["sous-admin"]),
-  articleController.desarchiver
+  articleController.unarchive
 );
 
 module.exports = router;
