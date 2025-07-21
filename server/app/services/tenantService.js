@@ -1,11 +1,45 @@
 const pool = require("../config/db");
 
 const tenantService = {
-  async create({ nom, logo_url, primary_color, secondary_color, slug }) {
+  async create({
+    nom,
+    logo_url,
+    primary_color,
+    secondary_color,
+    slug,
+    titre_principal,
+    texte_intro,
+    icone_url,
+    image_accueil_url,
+    texte_presentation,
+    email_contact,
+    lien_instagram,
+    telephone_contact,
+    adresse_contact,
+  }) {
     const result = await pool.query(
-      `INSERT INTO tenants (nom, logo_url, primary_color, secondary_color, slug, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
-      [nom, logo_url, primary_color, secondary_color, slug]
+      `INSERT INTO tenants (
+        nom, logo_url, primary_color, secondary_color, slug, created_at,
+        titre_principal, texte_intro, icone_url, image_accueil_url, texte_presentation,
+        email_contact, lien_instagram, telephone_contact, adresse_contact
+      )
+       VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+      [
+        nom,
+        logo_url,
+        primary_color,
+        secondary_color,
+        slug,
+        titre_principal,
+        texte_intro,
+        icone_url,
+        image_accueil_url,
+        texte_presentation,
+        email_contact,
+        lien_instagram,
+        telephone_contact,
+        adresse_contact,
+      ]
     );
     return result.rows[0];
   },

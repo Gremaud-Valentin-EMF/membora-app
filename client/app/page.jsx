@@ -102,11 +102,11 @@ export default function Home() {
           borderBottom: `3px solid ${tenant?.primary_color || "#00AF00"}`,
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {tenant?.logo_url && (
-                <div className="w-12 h-12 relative">
+                <div className="w-20 h-20 relative">
                   <Image
                     src={tenant.logo_url}
                     alt={`Logo ${tenant.nom}`}
@@ -122,9 +122,9 @@ export default function Home() {
                 >
                   {tenant?.nom || "Membora"}
                 </h1>
-                <p className="text-gray-600 text-sm">
-                  Gestion des événements et participations
-                </p>
+                {tenant?.texte_intro && (
+                  <p className="text-gray-600 text-sm"></p>
+                )}
               </div>
             </div>
 
@@ -155,12 +155,26 @@ export default function Home() {
               className="text-4xl font-bold mb-6"
               style={{ color: tenant?.primary_color || "#00AF00" }}
             >
-              Bienvenue chez {tenant?.nom}
+              {tenant?.titre_principal || `Bienvenue chez ${tenant?.nom}`}
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              Découvrez nos activités, événements et actualités. Rejoignez notre
-              communauté et participez à nos événements !
-            </p>
+            {tenant?.texte_intro && (
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                {tenant.texte_intro}
+              </p>
+            )}
+            {tenant?.image_accueil_url && (
+              <div className="flex justify-center mb-8">
+                <div className="w-full max-w-2xl h-64 relative">
+                  <Image
+                    src={tenant.image_accueil_url}
+                    alt="Image d'accueil"
+                    fill
+                    className="object-cover rounded-xl shadow"
+                    priority
+                  />
+                </div>
+              </div>
+            )}
             <div className="flex justify-center space-x-4">
               <Link href="/auth/register">
                 <Button
@@ -179,6 +193,23 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Présentation Section */}
+      {tenant?.texte_presentation && (
+        <section className="py-12 bg-gray-100">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h3
+              className="text-2xl font-bold mb-4 text-center"
+              style={{ color: tenant?.primary_color || "#00AF00" }}
+            >
+              Présentation
+            </h3>
+            <p className="text-lg text-gray-700 text-center whitespace-pre-line">
+              {tenant.texte_presentation}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Actualités Section */}
       <section id="actualites" className="py-16 bg-gray-50">
@@ -252,19 +283,56 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Footer avec contact */}
       <footer className="bg-gray-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h4
-              className="text-xl font-semibold mb-4"
-              style={{ color: tenant?.primary_color || "#00AF00" }}
-            >
-              {tenant?.nom}
-            </h4>
             <p className="text-gray-300 mb-6">
               Gestion des événements et participations avec Membora
             </p>
+            {/* Section contact */}
+            {(tenant?.email_contact ||
+              tenant?.telephone_contact ||
+              tenant?.adresse_contact ||
+              tenant?.lien_instagram) && (
+              <div className="mb-6 flex flex-col items-center space-y-2">
+                {tenant?.email_contact && (
+                  <a
+                    href={`mailto:${tenant.email_contact}`}
+                    className="text-gray-200 hover:text-white flex items-center space-x-2"
+                  >
+                    <span>{tenant.email_contact}</span>
+                  </a>
+                )}
+                {tenant?.telephone_contact && (
+                  <a
+                    href={`tel:${tenant.telephone_contact}`}
+                    className="text-gray-200 hover:text-white flex items-center space-x-2"
+                  >
+                    <span>{tenant.telephone_contact}</span>
+                  </a>
+                )}
+                {tenant?.adresse_contact && (
+                  <span className="text-gray-200 flex items-center space-x-2">
+                    <span>{tenant.adresse_contact}</span>
+                  </span>
+                )}
+                {tenant?.lien_instagram && (
+                  <a
+                    href={tenant.lien_instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-200 hover:text-white flex items-center"
+                  >
+                    <img
+                      src="/icons/instagram.svg"
+                      alt="Instagram"
+                      className="w-7 h-7 inline-block filter invert"
+                    />
+                  </a>
+                )}
+              </div>
+            )}
             <div className="flex justify-center space-x-6">
               <Link
                 href="/auth/login"

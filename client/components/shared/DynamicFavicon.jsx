@@ -10,8 +10,9 @@ export default function DynamicFavicon() {
   const { tenant } = useTenant();
 
   useEffect(() => {
-    const faviconUrl = tenant?.logo_url || DEFAULT_FAVICON;
-    const appleIconUrl = tenant?.logo_url || DEFAULT_APPLE_ICON;
+    const faviconUrl = tenant?.icone_url || tenant?.logo_url || DEFAULT_FAVICON;
+    const appleIconUrl =
+      tenant?.icone_url || tenant?.logo_url || DEFAULT_APPLE_ICON;
 
     // Favicon PNG
     let link = document.querySelector("link[rel~='icon']");
