@@ -1,0 +1,14 @@
+{
+  "name": "membora-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd client && npm ci && npm run build",
+    "dev": "cd client && npm run dev",
+    "start": "cd client && npm run start",
+    "install": "cd client && npm ci"
+  },
+  "dependencies": {
+    "next": "14.0.4"
+  }
+}
