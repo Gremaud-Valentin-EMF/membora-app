@@ -36,7 +36,9 @@ export default function EventDetailPage() {
       setTranches(tranchesData);
       setInscriptions(userIns);
       if (eventData.categorie_id) {
-        const categoryData = await apiService.getCategory(eventData.categorie_id);
+        const categoryData = await apiService.getCategory(
+          eventData.categorie_id
+        );
         setCategory(categoryData);
       }
     } catch (err) {
@@ -63,7 +65,10 @@ export default function EventDetailPage() {
 
   const handleRegister = async (trancheId) => {
     try {
-      await apiService.createInscription({ tranche_id: trancheId, membre_id: user.id });
+      await apiService.createInscription({
+        tranche_id: trancheId,
+        membre_id: user.id,
+      });
       await loadEventData();
     } catch (err) {
       setError("Erreur lors de l'inscription");
@@ -89,7 +94,6 @@ export default function EventDetailPage() {
       minute: "2-digit",
     });
   };
-
 
   if (loading) {
     return (
@@ -118,7 +122,6 @@ export default function EventDetailPage() {
       </div>
     );
   }
-
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -185,7 +188,9 @@ export default function EventDetailPage() {
             <h2 className="text-xl font-semibold mb-4">Tranches horaires</h2>
             <div className="space-y-3">
               {tranches.map((tranche) => {
-                const ins = inscriptions.find((i) => i.tranche_id === tranche.id);
+                const ins = inscriptions.find(
+                  (i) => i.tranche_id === tranche.id
+                );
                 return (
                   <div
                     key={tranche.id}
@@ -193,20 +198,33 @@ export default function EventDetailPage() {
                   >
                     <div>
                       <p className="font-medium text-gray-900">
-                        {new Date(tranche.debut).toLocaleString()} - {new Date(tranche.fin).toLocaleTimeString()}
+                        {new Date(tranche.debut).toLocaleString()} -{" "}
+                        {new Date(tranche.fin).toLocaleTimeString()}
                       </p>
-                      <p className="text-sm text-gray-500">Coches: {tranche.valeur_coches}</p>
+                      <p className="text-sm text-gray-500">
+                        Coches: {tranche.valeur_coches}
+                      </p>
                       {tranche.badge_categorie && (
-                        <p className="text-sm text-gray-500">Badge requis: {tranche.badge_categorie}</p>
+                        <p className="text-sm text-gray-500">
+                          Badge requis: {tranche.badge_categorie}
+                        </p>
                       )}
                     </div>
                     <div>
                       {ins ? (
-                        <Button variant="secondary" size="sm" onClick={() => handleUnregister(ins.id)}>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleUnregister(ins.id)}
+                        >
                           Se désinscrire
                         </Button>
                       ) : (
-                        <Button size="sm" primaryColor={tenant?.primary_color || "#00AF00"} onClick={() => handleRegister(tranche.id)}>
+                        <Button
+                          size="sm"
+                          primaryColor={tenant?.primary_color || "#00AF00"}
+                          onClick={() => handleRegister(tranche.id)}
+                        >
                           S'inscrire
                         </Button>
                       )}
@@ -217,26 +235,27 @@ export default function EventDetailPage() {
             </div>
           </Card>
         )}
+      </div>
 
-            <Button primaryColor={tenant?.primary_color || "#00AF00"}>
-              Marquer les présences
+      <div className="mt-6 flex gap-4 flex-wrap">
+        <Link href={`/main/events/${event.id}/attendance`}>
+          <Button primaryColor={tenant?.primary_color || "#00AF00"}>
+            Marquer les présences
+          </Button>
+        </Link>
+
+        {(user.role === "responsable" || user.role === "sous-admin") && (
+          <>
+            <Link href={`/main/events/${event.id}/edit`}>
+              <Button variant="secondary">Modifier l'événement</Button>
+            </Link>
+
+            <Button variant="secondary" onClick={handleDeleteEvent}>
+              Supprimer l'événement
             </Button>
-          </Link>
-
-          {(user.role === "responsable" || user.role === "sous-admin") && (
-            <>
-              <Link href={`/main/events/${event.id}/edit`}>
-                <Button variant="secondary">Modifier l'événement</Button>
-              </Link>
-
-              <Button variant="secondary" onClick={handleDeleteEvent}>
-                Supprimer l'événement
-              </Button>
-            </>
-          )}
-        </div>
-      </Card>
-
+          </>
+        )}
+      </div>
     </div>
   );
 }
