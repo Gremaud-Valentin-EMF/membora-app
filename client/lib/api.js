@@ -147,29 +147,6 @@ class ApiService {
     return this.delete(`/categories/${id}`);
   }
 
-  // Méthodes pour les participations
-  async getParticipations() {
-    return this.get("/participations");
-  }
-
-  async getParticipationsByEvent(eventId) {
-    return this.get(`/participations/evenement/${eventId}`);
-  }
-
-  async getParticipationsByMember(memberId) {
-    return this.get(`/participations/membre/${memberId}`);
-  }
-
-  async createParticipation(participationData) {
-    return this.post("/participations", participationData);
-  }
-
-  async updateParticipation(id, participationData) {
-    return this.put(`/participations/${id}`, participationData);
-  }
-
-  async deleteParticipation(id) {
-    return this.delete(`/participations/${id}`);
   }
 
   // Méthodes pour les articles
@@ -216,6 +193,45 @@ class ApiService {
 
   async createTenant(tenantData) {
     return this.post("/tenants", tenantData);
+  }
+  // Méthodes pour les tranches
+  async getTranchesByEvent(eventId){
+    return this.get(`/tranches/event/${eventId}`);
+  }
+  async createTranche(data){
+    return this.post(`/tranches`, data);
+  }
+  async updateTranche(id,data){
+    return this.put(`/tranches/${id}`, data);
+  }
+  async deleteTranche(id){
+    return this.delete(`/tranches/${id}`);
+  }
+  // Méthodes pour les inscriptions
+  async getInscriptionsByTranche(trancheId){
+    return this.get(`/inscriptions/tranche/${trancheId}`);
+  }
+  async getInscriptionsByMembre(membreId){
+    return this.get(`/inscriptions/membre/${membreId}`);
+  }
+  async createInscription(data){
+    return this.post(`/inscriptions`, data);
+  }
+  async deleteInscription(id){
+    return this.delete(`/inscriptions/${id}`);
+  }
+  async validerInscription(id){
+    return this.post(`/inscriptions/${id}/valider`);
+  }
+  // Méthodes pour les badges
+  async getBadges(membreId){
+    return this.get(`/badges/membre/${membreId}`);
+  }
+  async createBadge(data){
+    return this.post(`/badges`, data);
+  }
+  async getCoches(membreId){
+    return this.get(`/membres/${membreId}/coches`);
   }
 
   async updateTenant(id, tenantData) {

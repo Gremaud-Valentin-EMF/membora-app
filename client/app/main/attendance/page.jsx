@@ -16,10 +16,18 @@ export default function AttendancePage() {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [members, setMembers] = useState([]);
-  const [participations, setParticipations] = useState([]);
+  const [tranches, setTranches] = useState([]);
+  const [inscriptions, setInscriptions] = useState([]);
+  const [selectedTranche, setSelectedTranche] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [newTranche, setNewTranche] = useState({
+    debut: "",
+    fin: "",
+    valeur_coches: 1,
+    badge_categorie: "",
+  });
 
   useEffect(() => {
     loadData();
@@ -30,6 +38,12 @@ export default function AttendancePage() {
       loadEventData(selectedEvent.id);
     }
   }, [selectedEvent]);
+
+  useEffect(() => {
+    if (selectedTranche) {
+      apiService.getInscriptionsByTranche(selectedTranche.id).then(setInscriptions);
+    }
+  }, [selectedTranche]);
 
   const loadData = async () => {
     try {
@@ -57,59 +71,87 @@ export default function AttendancePage() {
 
   const loadEventData = async (eventId) => {
     try {
-      const [membersData, participationsData] = await Promise.all([
+      const [membersData, tranchesData] = await Promise.all([
         apiService.getMembers(),
-        apiService.getParticipationsByEvent(eventId),
+        apiService.getTranchesByEvent(eventId),
       ]);
 
       const filteredMembers = membersData.filter(
         (member) => member.tenant_id === user.tenant_id
       );
       setMembers(filteredMembers);
-      setParticipations(participationsData);
+      setTranches(tranchesData);
+      if (tranchesData.length > 0) {
+        setSelectedTranche(tranchesData[0]);
+        const insc = await apiService.getInscriptionsByTranche(tranchesData[0].id);
+        setInscriptions(insc);
+      }
     } catch (err) {
       setError("Erreur lors du chargement des données de l'événement");
       console.error("Error loading event data:", err);
     }
   };
 
-  const handleAttendanceChange = async (memberId, present) => {
+  const handleToggleInscription = async (memberId, inscrit) => {
     try {
       setSaving(true);
-
-      // Vérifier si une participation existe déjà
-      const existingParticipation = participations.find(
-        (p) => p.membre_id === memberId
-      );
-
-      if (existingParticipation) {
-        // Mettre à jour la participation existante
-        await apiService.updateParticipation(existingParticipation.id, {
-          present,
-        });
+      if (inscrit) {
+        const existing = inscriptions.find((i) => i.membre_id === memberId);
+        if (existing) await apiService.deleteInscription(existing.id);
       } else {
-        // Créer une nouvelle participation
-        await apiService.createParticipation({
-          membre_id: memberId,
-          evenement_id: selectedEvent.id,
-          present,
-          tenant_id: user.tenant_id,
-        });
+        await apiService.createInscription({ tranche_id: selectedTranche.id, membre_id: memberId });
       }
-
-      // Recharger les participations
-      await loadEventData(selectedEvent.id);
+      const updated = await apiService.getInscriptionsByTranche(selectedTranche.id);
+      setInscriptions(updated);
     } catch (err) {
-      setError("Erreur lors de la mise à jour de la présence");
-      console.error("Error updating attendance:", err);
+      setError("Erreur lors de la mise à jour de l'inscription");
     } finally {
       setSaving(false);
     }
   };
 
+  const handleValidate = async (inscriptionId) => {
+    try {
+      await apiService.validerInscription(inscriptionId);
+      const updated = await apiService.getInscriptionsByTranche(selectedTranche.id);
+      setInscriptions(updated);
+    } catch (err) {
+      setError("Erreur lors de la validation");
+    }
+  };
+
+  const handleCreateTranche = async (e) => {
+    e.preventDefault();
+    try {
+      await apiService.createTranche({
+        evenement_id: selectedEvent.id,
+        debut: newTranche.debut,
+        fin: newTranche.fin,
+        valeur_coches: parseInt(newTranche.valeur_coches, 10) || 1,
+        badge_categorie: newTranche.badge_categorie || null,
+        tenant_id: user.tenant_id,
+      });
+      setNewTranche({ debut: "", fin: "", valeur_coches: 1, badge_categorie: "" });
+      await loadEventData(selectedEvent.id);
+    } catch (err) {
+      setError("Erreur lors de la création de la tranche");
+    }
+  };
+
+  const handleDeleteTranche = async (id) => {
+    if (!confirm("Supprimer cette tranche ?")) return;
+    try {
+      await apiService.deleteTranche(id);
+      if (selectedTranche?.id === id) setSelectedTranche(null);
+      await loadEventData(selectedEvent.id);
+    } catch (err) {
+      setError("Erreur lors de la suppression de la tranche");
+    }
+  };
+
   const getParticipationStatus = (memberId) => {
-    const participation = participations.find((p) => p.membre_id === memberId);
-    return participation ? participation.present : null;
+    const ins = inscriptions.find((p) => p.membre_id === memberId);
+    return ins ? true : false;
   };
 
   const formatDate = (dateString) => {
@@ -184,6 +226,78 @@ export default function AttendancePage() {
         </div>
       </Card>
 
+      {selectedEvent && (
+        <Card className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Tranches horaires</h2>
+          {tranches.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {tranches.map((t) => (
+                <div key={t.id} className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={selectedTranche?.id === t.id ? "primary" : "secondary"}
+                    primaryColor={tenant?.primary_color || "#00AF00"}
+                    onClick={() => setSelectedTranche(t)}
+                  >
+                    {new Date(t.debut).toLocaleString()}
+                  </Button>
+                  {(user.role === "responsable" || user.role === "sous-admin") && (
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => handleDeleteTranche(t.id)}
+                    >
+                      Supprimer
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(user.role === "responsable" || user.role === "sous-admin") && (
+            <form onSubmit={handleCreateTranche} className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="datetime-local"
+                  className="border p-2 rounded flex-1"
+                  value={newTranche.debut}
+                  onChange={(e) => setNewTranche({ ...newTranche, debut: e.target.value })}
+                  required
+                />
+                <input
+                  type="datetime-local"
+                  className="border p-2 rounded flex-1"
+                  value={newTranche.fin}
+                  onChange={(e) => setNewTranche({ ...newTranche, fin: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  className="border p-2 rounded w-32"
+                  value={newTranche.valeur_coches}
+                  onChange={(e) => setNewTranche({ ...newTranche, valeur_coches: e.target.value })}
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Badge requis"
+                  className="border p-2 rounded flex-1"
+                  value={newTranche.badge_categorie}
+                  onChange={(e) => setNewTranche({ ...newTranche, badge_categorie: e.target.value })}
+                />
+                <Button type="submit" size="sm" primaryColor={tenant?.primary_color || "#00AF00"}>
+                  Ajouter
+                </Button>
+              </div>
+            </form>
+          )}
+        </Card>
+      )}
+
       {/* Liste des membres et présences */}
       {selectedEvent && (
         <Card>
@@ -199,41 +313,39 @@ export default function AttendancePage() {
             <div className="space-y-4">
               {members.map((member) => {
                 const status = getParticipationStatus(member.id);
+                const ins = inscriptions.find((p) => p.membre_id === member.id);
                 return (
                   <div
                     key={member.id}
                     className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
                   >
                     <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {member.nom}
-                      </h3>
+                      <h3 className="font-semibold text-gray-900">{member.nom}</h3>
                       <p className="text-sm text-gray-600">{member.email}</p>
-                      <p className="text-sm text-gray-500">
-                        Rôle: {member.role}
-                      </p>
+                      <p className="text-sm text-gray-500">Rôle: {member.role}</p>
                     </div>
 
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 items-center">
                       <Button
                         size="sm"
-                        variant={status === true ? "primary" : "secondary"}
                         primaryColor={tenant?.primary_color || "#00AF00"}
-                        onClick={() => handleAttendanceChange(member.id, true)}
+                        onClick={() => handleToggleInscription(member.id, !!status)}
                         disabled={saving}
                       >
-                        Présent
+                        {status ? "Désinscrire" : "Inscrire"}
                       </Button>
-
-                      <Button
-                        size="sm"
-                        variant={status === false ? "primary" : "secondary"}
-                        primaryColor={tenant?.primary_color || "#00AF00"}
-                        onClick={() => handleAttendanceChange(member.id, false)}
-                        disabled={saving}
-                      >
-                        Absent
-                      </Button>
+                      {ins && !ins.coche_attribue && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleValidate(ins.id)}
+                        >
+                          Valider
+                        </Button>
+                      )}
+                      {ins && ins.coche_attribue && (
+                        <span className="text-green-600 text-sm">Coche attribuée</span>
+                      )}
                     </div>
                   </div>
                 );
