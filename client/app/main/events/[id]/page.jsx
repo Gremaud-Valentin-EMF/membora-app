@@ -15,7 +15,8 @@ export default function EventDetailPage() {
 
   const [event, setEvent] = useState(null);
   const [category, setCategory] = useState(null);
-  const [participations, setParticipations] = useState([]);
+  const [tranches, setTranches] = useState([]);
+  const [inscriptions, setInscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -26,19 +27,16 @@ export default function EventDetailPage() {
   const loadEventData = async () => {
     try {
       setLoading(true);
-      const [eventData, participationsData] = await Promise.all([
+      const [eventData, tranchesData, userIns] = await Promise.all([
         apiService.getEvent(id),
-        apiService.getParticipationsByEvent(id),
+        apiService.getTranchesByEvent(id),
+        apiService.getInscriptionsByMembre(user.id),
       ]);
-
       setEvent(eventData);
-      setParticipations(participationsData);
-
-      // Charger les informations de la catégorie
+      setTranches(tranchesData);
+      setInscriptions(userIns);
       if (eventData.categorie_id) {
-        const categoryData = await apiService.getCategory(
-          eventData.categorie_id
-        );
+        const categoryData = await apiService.getCategory(eventData.categorie_id);
         setCategory(categoryData);
       }
     } catch (err) {
@@ -63,6 +61,24 @@ export default function EventDetailPage() {
     }
   };
 
+  const handleRegister = async (trancheId) => {
+    try {
+      await apiService.createInscription({ tranche_id: trancheId, membre_id: user.id });
+      await loadEventData();
+    } catch (err) {
+      setError("Erreur lors de l'inscription");
+    }
+  };
+
+  const handleUnregister = async (inscriptionId) => {
+    try {
+      await apiService.deleteInscription(inscriptionId);
+      await loadEventData();
+    } catch (err) {
+      setError("Erreur lors de la désinscription");
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", {
@@ -74,12 +90,6 @@ export default function EventDetailPage() {
     });
   };
 
-  const getAttendanceStats = () => {
-    const total = participations.length;
-    const present = participations.filter((p) => p.present).length;
-    const absent = participations.filter((p) => !p.present).length;
-    return { total, present, absent };
-  };
 
   if (loading) {
     return (
@@ -109,7 +119,6 @@ export default function EventDetailPage() {
     );
   }
 
-  const stats = getAttendanceStats();
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -171,41 +180,44 @@ export default function EventDetailPage() {
           </div>
         </Card>
 
-        {/* Statistiques de présence */}
-        <Card>
-          <h2 className="text-xl font-semibold mb-4">
-            Statistiques de présence
-          </h2>
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
-                  {stats.total}
-                </div>
-                <div className="text-sm text-blue-600">Total</div>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  {stats.present}
-                </div>
-                <div className="text-sm text-green-600">Présents</div>
-              </div>
-              <div className="bg-red-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">
-                  {stats.absent}
-                </div>
-                <div className="text-sm text-red-600">Absents</div>
-              </div>
+        {tranches.length > 0 && (
+          <Card className="mt-6">
+            <h2 className="text-xl font-semibold mb-4">Tranches horaires</h2>
+            <div className="space-y-3">
+              {tranches.map((tranche) => {
+                const ins = inscriptions.find((i) => i.tranche_id === tranche.id);
+                return (
+                  <div
+                    key={tranche.id}
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {new Date(tranche.debut).toLocaleString()} - {new Date(tranche.fin).toLocaleTimeString()}
+                      </p>
+                      <p className="text-sm text-gray-500">Coches: {tranche.valeur_coches}</p>
+                      {tranche.badge_categorie && (
+                        <p className="text-sm text-gray-500">Badge requis: {tranche.badge_categorie}</p>
+                      )}
+                    </div>
+                    <div>
+                      {ins ? (
+                        <Button variant="secondary" size="sm" onClick={() => handleUnregister(ins.id)}>
+                          Se désinscrire
+                        </Button>
+                      ) : (
+                        <Button size="sm" primaryColor={tenant?.primary_color || "#00AF00"} onClick={() => handleRegister(tranche.id)}>
+                          S'inscrire
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+        )}
 
-      {/* Actions */}
-      <Card className="mt-6">
-        <h2 className="text-xl font-semibold mb-4">Actions</h2>
-        <div className="flex flex-wrap gap-4">
-          <Link href={`/main/attendance?eventId=${event.id}`}>
             <Button primaryColor={tenant?.primary_color || "#00AF00"}>
               Marquer les présences
             </Button>
@@ -225,37 +237,6 @@ export default function EventDetailPage() {
         </div>
       </Card>
 
-      {/* Liste des participations */}
-      {participations.length > 0 && (
-        <Card className="mt-6">
-          <h2 className="text-xl font-semibold mb-4">
-            Liste des participations
-          </h2>
-          <div className="space-y-3">
-            {participations.map((participation) => (
-              <div
-                key={participation.id}
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {participation.membre_nom ||
-                      `Membre ID: ${participation.membre_id}`}
-                  </p>
-                  {participation.membre_email && (
-                    <p className="text-sm text-gray-600">
-                      {participation.membre_email}
-                    </p>
-                  )}
-                  <p className="text-sm text-gray-500">
-                    Statut: {participation.present ? "Présent" : "Absent"}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
     </div>
   );
 }
