@@ -163,4 +163,5 @@ router.post(
   membreController.unsetResponsable
 );
 
+router.get("/:id/coches", auth, membreController.getCoches);
 module.exports = router;

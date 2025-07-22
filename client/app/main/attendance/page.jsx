@@ -16,7 +16,9 @@ export default function AttendancePage() {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [members, setMembers] = useState([]);
-  const [participations, setParticipations] = useState([]);
+  const [tranches, setTranches] = useState([]);
+  const [inscriptions, setInscriptions] = useState([]);
+  const [selectedTranche, setSelectedTranche] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -30,6 +32,12 @@ export default function AttendancePage() {
       loadEventData(selectedEvent.id);
     }
   }, [selectedEvent]);
+
+  useEffect(() => {
+    if (selectedTranche) {
+      apiService.getInscriptionsByTranche(selectedTranche.id).then(setInscriptions);
+    }
+  }, [selectedTranche]);
 
   const loadData = async () => {
     try {
@@ -57,59 +65,48 @@ export default function AttendancePage() {
 
   const loadEventData = async (eventId) => {
     try {
-      const [membersData, participationsData] = await Promise.all([
+      const [membersData, tranchesData] = await Promise.all([
         apiService.getMembers(),
-        apiService.getParticipationsByEvent(eventId),
+        apiService.getTranchesByEvent(eventId),
       ]);
 
       const filteredMembers = membersData.filter(
         (member) => member.tenant_id === user.tenant_id
       );
       setMembers(filteredMembers);
-      setParticipations(participationsData);
+      setTranches(tranchesData);
+      if (tranchesData.length > 0) {
+        setSelectedTranche(tranchesData[0]);
+        const insc = await apiService.getInscriptionsByTranche(tranchesData[0].id);
+        setInscriptions(insc);
+      }
     } catch (err) {
       setError("Erreur lors du chargement des données de l'événement");
       console.error("Error loading event data:", err);
     }
   };
 
-  const handleAttendanceChange = async (memberId, present) => {
+  const handleToggleInscription = async (memberId, inscrit) => {
     try {
       setSaving(true);
-
-      // Vérifier si une participation existe déjà
-      const existingParticipation = participations.find(
-        (p) => p.membre_id === memberId
-      );
-
-      if (existingParticipation) {
-        // Mettre à jour la participation existante
-        await apiService.updateParticipation(existingParticipation.id, {
-          present,
-        });
+      if (inscrit) {
+        const existing = inscriptions.find((i) => i.membre_id === memberId);
+        if (existing) await apiService.deleteInscription(existing.id);
       } else {
-        // Créer une nouvelle participation
-        await apiService.createParticipation({
-          membre_id: memberId,
-          evenement_id: selectedEvent.id,
-          present,
-          tenant_id: user.tenant_id,
-        });
+        await apiService.createInscription({ tranche_id: selectedTranche.id, membre_id: memberId });
       }
-
-      // Recharger les participations
-      await loadEventData(selectedEvent.id);
+      const updated = await apiService.getInscriptionsByTranche(selectedTranche.id);
+      setInscriptions(updated);
     } catch (err) {
-      setError("Erreur lors de la mise à jour de la présence");
-      console.error("Error updating attendance:", err);
+      setError("Erreur lors de la mise à jour de l'inscription");
     } finally {
       setSaving(false);
     }
   };
 
   const getParticipationStatus = (memberId) => {
-    const participation = participations.find((p) => p.membre_id === memberId);
-    return participation ? participation.present : null;
+    const ins = inscriptions.find((p) => p.membre_id === memberId);
+    return ins ? true : false;
   };
 
   const formatDate = (dateString) => {
@@ -184,6 +181,25 @@ export default function AttendancePage() {
         </div>
       </Card>
 
+      {selectedEvent && tranches.length > 0 && (
+        <Card className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Sélectionner une tranche</h2>
+          <div className="flex flex-wrap gap-2">
+            {tranches.map((t) => (
+              <Button
+                key={t.id}
+                size="sm"
+                variant={selectedTranche?.id === t.id ? "primary" : "secondary"}
+                primaryColor={tenant?.primary_color || "#00AF00"}
+                onClick={() => setSelectedTranche(t)}
+              >
+                {new Date(t.debut).toLocaleString()}
+              </Button>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Liste des membres et présences */}
       {selectedEvent && (
         <Card>
@@ -217,22 +233,11 @@ export default function AttendancePage() {
                     <div className="flex space-x-2">
                       <Button
                         size="sm"
-                        variant={status === true ? "primary" : "secondary"}
                         primaryColor={tenant?.primary_color || "#00AF00"}
-                        onClick={() => handleAttendanceChange(member.id, true)}
+                        onClick={() => handleToggleInscription(member.id, !!status)}
                         disabled={saving}
                       >
-                        Présent
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant={status === false ? "primary" : "secondary"}
-                        primaryColor={tenant?.primary_color || "#00AF00"}
-                        onClick={() => handleAttendanceChange(member.id, false)}
-                        disabled={saving}
-                      >
-                        Absent
+                        {status ? "Désinscrire" : "Inscrire"}
                       </Button>
                     </div>
                   </div>

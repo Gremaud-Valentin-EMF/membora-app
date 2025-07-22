@@ -82,6 +82,10 @@ const membreService = {
     );
     return result.rows[0];
   },
+  async getCoches(membre_id){
+    const res = await pool.query(`SELECT SUM(th.valeur_coches) as total FROM inscriptions_tranches it JOIN tranches_horaires th ON it.tranche_id=th.id WHERE it.membre_id=$1 AND it.coche_attribue=true`, [membre_id]);
+    return parseInt(res.rows[0].total) || 0;
+  },
 };
 
 module.exports = membreService;

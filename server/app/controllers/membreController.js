@@ -71,6 +71,14 @@ const membreController = {
       res.status(500).json({ message: err.message });
     }
   },
+  async getCoches(req, res) {
+    try {
+      const total = await membreService.getCoches(req.params.id);
+      res.json({ total });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
 };
 
 module.exports = membreController;
