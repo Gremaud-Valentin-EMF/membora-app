@@ -7,6 +7,7 @@ import apiService from "../../../../lib/api";
 import Input from "../../../../components/ui/Input";
 import Button from "../../../../components/ui/Button";
 import Card from "../../../../components/ui/Card";
+import ImageUpload from "../../../../components/ui/ImageUpload";
 import Link from "next/link";
 
 export default function CreateArticlePage() {
@@ -20,6 +21,8 @@ export default function CreateArticlePage() {
     etat: "brouillon",
     date_publication: "",
   });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
 
   const handleChange = (e) => {
     setFormData({
@@ -28,24 +31,40 @@ export default function CreateArticlePage() {
     });
   };
 
+  const handleImageChange = (file, previewUrl) => {
+    setSelectedImage(file);
+    setImagePreview(previewUrl);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const articleData = {
-        ...formData,
-        auteur_id: user.id,
-        tenant_id: user.tenant_id,
-        // Si pas de date de publication et que l'état est publié, utiliser maintenant
-        date_publication:
-          formData.etat === "publié" && !formData.date_publication
-            ? new Date().toISOString()
-            : formData.date_publication || null,
-      };
+      // Créer un FormData pour envoyer l'image avec les autres données
+      const formDataToSend = new FormData();
 
-      await apiService.createArticle(articleData);
+      // Ajouter les données de l'article
+      formDataToSend.append("titre", formData.titre);
+      formDataToSend.append("contenu", formData.contenu);
+      formDataToSend.append("etat", formData.etat);
+      formDataToSend.append("auteur_id", user.id);
+      formDataToSend.append("tenant_id", user.tenant_id);
+
+      // Ajouter la date de publication si elle existe
+      if (formData.etat === "publié" && !formData.date_publication) {
+        formDataToSend.append("date_publication", new Date().toISOString());
+      } else if (formData.date_publication) {
+        formDataToSend.append("date_publication", formData.date_publication);
+      }
+
+      // Ajouter l'image si elle existe
+      if (selectedImage) {
+        formDataToSend.append("image", selectedImage);
+      }
+
+      await apiService.createArticle(formDataToSend);
       router.push("/main/articles");
     } catch (err) {
       setError(err.message || "Erreur lors de la création de l'article");
@@ -109,6 +128,14 @@ export default function CreateArticlePage() {
             onChange={handleChange}
             required
             placeholder="Titre de votre article"
+          />
+
+          <ImageUpload
+            label="Image de l'article (optionnel)"
+            onChange={handleImageChange}
+            value={imagePreview}
+            maxSize={5 * 1024 * 1024} // 5MB
+            previewClassName="w-full h-64 object-cover rounded-lg"
           />
 
           <div>

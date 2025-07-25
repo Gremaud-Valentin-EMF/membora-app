@@ -12,6 +12,7 @@ export default function EventsPage() {
   const { user, tenant } = useAuth();
   const [events, setEvents] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,6 +39,29 @@ export default function EventsPage() {
 
       setEvents(filteredEvents);
       setCategories(filteredCategories);
+
+      // MOCK DATA pour les badges
+      const mockBadges = [
+        {
+          id: 1,
+          nom: "Bénévole expérimenté",
+          couleur: "#10B981",
+          icone: "🏆",
+        },
+        {
+          id: 2,
+          nom: "Responsable cuisine",
+          couleur: "#F59E0B",
+          icone: "👨‍🍳",
+        },
+        {
+          id: 3,
+          nom: "Nouveau membre",
+          couleur: "#8B5CF6",
+          icone: "🌟",
+        },
+      ];
+      setBadges(mockBadges);
     } catch (err) {
       setError("Erreur lors du chargement des événements");
       console.error("Error loading events:", err);
@@ -76,6 +100,10 @@ export default function EventsPage() {
   const getCategoryName = (categoryId) => {
     const category = categories.find((cat) => cat.id === categoryId);
     return category ? category.nom : "Catégorie inconnue";
+  };
+
+  const getBadgeById = (badgeId) => {
+    return badges.find((badge) => badge.id === badgeId);
   };
 
   const filteredEvents = events.filter((event) => {
@@ -174,15 +202,47 @@ export default function EventsPage() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
                       {event.nom}
                     </h3>
-                    <p className="text-sm text-gray-600 mb-2">
-                      📅 {formatDate(event.date_formatted || event.date)}
+                    <p className="text-sm text-gray-600 mb-1">
+                      🕐 Début: {formatDate(event.date_formatted || event.date)}
                     </p>
+                    {(event.date_fin_formatted || event.date_fin) && (
+                      <p className="text-sm text-gray-600 mb-2">
+                        🕑 Fin:{" "}
+                        {formatDate(event.date_fin_formatted || event.date_fin)}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-500">
                       📂 {getCategoryName(event.categorie_id)}
                     </p>
                     <p className="text-sm text-gray-500">
                       📊 Statut: {event.statut}
                     </p>
+
+                    {/* Affichage des badges requis */}
+                    {event.badges_requis && event.badges_requis.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs text-gray-500 mb-2">
+                          Badges requis :
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {event.badges_requis.map((badgeId) => {
+                            const badge = getBadgeById(badgeId);
+                            if (!badge) return null;
+                            return (
+                              <div
+                                key={badgeId}
+                                className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white"
+                                style={{ backgroundColor: badge.couleur }}
+                                title={badge.nom}
+                              >
+                                <span>{badge.icone}</span>
+                                <span>{badge.nom}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -199,18 +259,45 @@ export default function EventsPage() {
                       user.role === "sous-admin") && (
                       <>
                         <Link href={`/main/events/${event.id}/edit`}>
-                          <Button variant="secondary" size="sm">
-                            Modifier
-                          </Button>
+                          <button
+                            className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
+                            title="Modifier l'événement"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </button>
                         </Link>
 
-                        <Button
-                          variant="secondary"
-                          size="sm"
+                        <button
+                          className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
                           onClick={() => handleDeleteEvent(event.id)}
+                          title="Supprimer l'événement"
                         >
-                          Supprimer
-                        </Button>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
                       </>
                     )}
                   </div>

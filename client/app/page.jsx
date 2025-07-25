@@ -175,17 +175,12 @@ export default function Home() {
                 </div>
               </div>
             )}
-            <div className="flex justify-center space-x-4">
-              <Link href="/auth/register">
+            <div className="flex justify-center">
+              <Link href="#actualites">
                 <Button
                   primaryColor={tenant?.primary_color || "#00AF00"}
                   size="lg"
                 >
-                  Rejoindre l'organisation
-                </Button>
-              </Link>
-              <Link href="#actualites">
-                <Button variant="secondary" size="lg">
                   Voir les actualités
                 </Button>
               </Link>
@@ -247,6 +242,20 @@ export default function Home() {
                   className="hover:shadow-lg transition-shadow"
                 >
                   <div className="space-y-4">
+                    {/* Image de l'article */}
+                    {article.image_url && (
+                      <div className="w-full h-48 rounded-lg overflow-hidden">
+                        <img
+                          src={article.image_url}
+                          alt={article.titre}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                          }}
+                        />
+                      </div>
+                    )}
+
                     <div>
                       <h4 className="text-xl font-semibold text-gray-900 mb-2">
                         {article.titre}
@@ -287,9 +296,6 @@ export default function Home() {
       <footer className="bg-gray-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-gray-300 mb-6">
-              Gestion des événements et participations avec Membora
-            </p>
             {/* Section contact */}
             {(tenant?.email_contact ||
               tenant?.telephone_contact ||
@@ -333,18 +339,17 @@ export default function Home() {
                 )}
               </div>
             )}
-            <div className="flex justify-center space-x-6">
+
+            <p className="text-gray-300 mb-6">
+              Gestion des événements et participations avec Membora
+            </p>
+
+            <div className="flex justify-center">
               <Link
                 href="/auth/login"
                 className="text-gray-300 hover:text-white"
               >
                 Connexion
-              </Link>
-              <Link
-                href="/auth/register"
-                className="text-gray-300 hover:text-white"
-              >
-                Inscription
               </Link>
             </div>
           </div>

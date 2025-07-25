@@ -7,6 +7,7 @@ import apiService from "../../../../../lib/api";
 import Input from "../../../../../components/ui/Input";
 import Button from "../../../../../components/ui/Button";
 import Card from "../../../../../components/ui/Card";
+import ImageUpload from "../../../../../components/ui/ImageUpload";
 import Link from "next/link";
 
 export default function EditArticlePage() {
@@ -24,6 +25,9 @@ export default function EditArticlePage() {
     etat: "brouillon",
     date_publication: "",
   });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [existingImageUrl, setExistingImageUrl] = useState("");
 
   useEffect(() => {
     loadArticle();
@@ -46,6 +50,12 @@ export default function EditArticlePage() {
         etat: articleData.etat,
         date_publication: publicationDate,
       });
+
+      // Charger l'image existante si elle existe
+      if (articleData.image_url) {
+        setExistingImageUrl(articleData.image_url);
+        setImagePreview(articleData.image_url);
+      }
     } catch (err) {
       setError("Erreur lors du chargement de l'article");
       console.error("Error loading article:", err);
@@ -61,22 +71,47 @@ export default function EditArticlePage() {
     });
   };
 
+  const handleImageChange = (file, previewUrl) => {
+    setSelectedImage(file);
+    setImagePreview(previewUrl);
+    // Si une nouvelle image est sélectionnée, effacer l'URL de l'ancienne
+    if (file) {
+      setExistingImageUrl("");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSaving(true);
 
     try {
-      const articleData = {
-        ...formData,
-        // Si pas de date de publication et que l'état est publié, utiliser maintenant
-        date_publication:
-          formData.etat === "publié" && !formData.date_publication
-            ? new Date().toISOString()
-            : formData.date_publication || null,
-      };
+      // Créer un FormData pour envoyer l'image avec les autres données
+      const formDataToSend = new FormData();
 
-      await apiService.updateArticle(id, articleData);
+      // Ajouter les données de l'article
+      formDataToSend.append("titre", formData.titre);
+      formDataToSend.append("contenu", formData.contenu);
+      formDataToSend.append("etat", formData.etat);
+
+      // Ajouter la date de publication si elle existe
+      if (formData.etat === "publié" && !formData.date_publication) {
+        formDataToSend.append("date_publication", new Date().toISOString());
+      } else if (formData.date_publication) {
+        formDataToSend.append("date_publication", formData.date_publication);
+      }
+
+      // Ajouter l'image si une nouvelle est sélectionnée
+      if (selectedImage) {
+        formDataToSend.append("image", selectedImage);
+      }
+
+      // Indiquer si on garde l'image existante
+      if (existingImageUrl && !selectedImage) {
+        formDataToSend.append("keep_existing_image", "true");
+      }
+
+      await apiService.updateArticle(id, formDataToSend);
       router.push("/main/articles");
     } catch (err) {
       setError(err.message || "Erreur lors de la mise à jour de l'article");
@@ -168,6 +203,14 @@ export default function EditArticlePage() {
             onChange={handleChange}
             required
             placeholder="Titre de votre article"
+          />
+
+          <ImageUpload
+            label="Image de l'article (optionnel)"
+            onChange={handleImageChange}
+            value={imagePreview}
+            maxSize={5 * 1024 * 1024} // 5MB
+            previewClassName="w-full h-64 object-cover rounded-lg"
           />
 
           <div>

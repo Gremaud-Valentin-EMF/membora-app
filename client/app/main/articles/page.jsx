@@ -217,7 +217,7 @@ export default function ArticlesPage() {
                       </p>
                     </div>
 
-                    <div className="ml-4">
+                    <div className="ml-4 flex flex-col items-end space-y-2">
                       <span
                         className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(
                           article.etat
@@ -225,6 +225,20 @@ export default function ArticlesPage() {
                       >
                         {article.etat}
                       </span>
+
+                      {/* Image de l'article */}
+                      {article.image_url && (
+                        <div className="w-24 h-16 rounded-lg overflow-hidden border border-gray-200">
+                          <img
+                            src={article.image_url}
+                            alt={article.titre}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 

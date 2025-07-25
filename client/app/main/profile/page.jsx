@@ -14,7 +14,6 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [participations, setParticipations] = useState([]);
   const [formData, setFormData] = useState({
     nom: user?.nom || "",
     email: user?.email || "",
@@ -22,21 +21,6 @@ export default function ProfilePage() {
     newPassword: "",
     confirmPassword: "",
   });
-
-  useEffect(() => {
-    loadParticipations();
-  }, []);
-
-  const loadParticipations = async () => {
-    try {
-      const participationsData = await apiService.getParticipationsByMember(
-        user.id
-      );
-      setParticipations(participationsData);
-    } catch (err) {
-      console.error("Error loading participations:", err);
-    }
-  };
 
   const handleChange = (e) => {
     setFormData({
@@ -236,56 +220,6 @@ export default function ProfilePage() {
                 </p>
               </div>
             </div>
-          </Card>
-
-          {/* Statistiques de participation */}
-          <Card>
-            <h2 className="text-xl font-semibold mb-4">Mes participations</h2>
-            {participations.length === 0 ? (
-              <p className="text-gray-500">Aucune participation enregistrée</p>
-            ) : (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="text-lg font-bold text-blue-600">
-                      {participations.length}
-                    </div>
-                    <div className="text-sm text-blue-600">Total</div>
-                  </div>
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <div className="text-lg font-bold text-green-600">
-                      {participations.filter((p) => p.present).length}
-                    </div>
-                    <div className="text-sm text-green-600">Présences</div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-3">
-                  <h3 className="font-medium mb-2">Dernières participations</h3>
-                  <div className="space-y-2">
-                    {participations.slice(0, 3).map((participation) => (
-                      <div
-                        key={participation.id}
-                        className="flex justify-between items-center text-sm"
-                      >
-                        <span className="text-gray-600">
-                          Événement #{participation.evenement_id}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            participation.present
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {participation.present ? "Présent" : "Absent"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </Card>
         </div>
       </div>

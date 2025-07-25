@@ -13,31 +13,71 @@ export default function CreateEventPage() {
   const { user, tenant } = useAuth();
   const router = useRouter();
   const [categories, setCategories] = useState([]);
+  const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     nom: "",
     date: "",
+    date_fin: "",
     categorie_id: "",
-    statut: "planifié",
     tenant_id: user?.tenant_id,
+    badges_requis: [], // Nouveaux badges requis
   });
 
   useEffect(() => {
-    loadCategories();
+    loadData();
   }, []);
 
-  const loadCategories = async () => {
+  const loadData = async () => {
     try {
-      const categoriesData = await apiService.getCategories();
+      const [categoriesData, badgesData] = await Promise.all([
+        apiService.getCategories(),
+        // TODO: Implémenter l'API pour les badges
+        // apiService.getBadges()
+        Promise.resolve([]), // Temporaire
+      ]);
+
       const filteredCategories = categoriesData.filter(
         (cat) => cat.tenant_id === user.tenant_id
       );
       setCategories(filteredCategories);
+
+      // MOCK DATA pour les badges
+      const mockBadges = [
+        {
+          id: 1,
+          nom: "Bénévole expérimenté",
+          couleur: "#10B981",
+          icone: "🏆",
+        },
+        {
+          id: 2,
+          nom: "Responsable cuisine",
+          couleur: "#F59E0B",
+          icone: "👨‍🍳",
+        },
+        {
+          id: 3,
+          nom: "Nouveau membre",
+          couleur: "#8B5CF6",
+          icone: "🌟",
+        },
+      ];
+      setBadges(mockBadges);
     } catch (err) {
-      setError("Erreur lors du chargement des catégories");
-      console.error("Error loading categories:", err);
+      setError("Erreur lors du chargement des données");
+      console.error("Error loading data:", err);
     }
+  };
+
+  const handleBadgeToggle = (badgeId) => {
+    setFormData((prev) => ({
+      ...prev,
+      badges_requis: prev.badges_requis.includes(badgeId)
+        ? prev.badges_requis.filter((id) => id !== badgeId)
+        : [...prev.badges_requis, badgeId],
+    }));
   };
 
   const handleChange = (e) => {
@@ -107,10 +147,19 @@ export default function CreateEventPage() {
           />
 
           <Input
-            label="Date et heure"
+            label="Date et heure de début"
             type="datetime-local"
             name="date"
             value={formData.date}
+            onChange={handleChange}
+            required
+          />
+
+          <Input
+            label="Date et heure de fin"
+            type="datetime-local"
+            name="date_fin"
+            value={formData.date_fin}
             onChange={handleChange}
             required
           />
@@ -135,22 +184,80 @@ export default function CreateEventPage() {
             </select>
           </div>
 
-          <div>
+          {/* Section des badges requis */}
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Statut
+              Badges requis (optionnel)
             </label>
-            <select
-              name="statut"
-              value={formData.statut}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="planifié">Planifié</option>
-              <option value="en cours">En cours</option>
-              <option value="terminé">Terminé</option>
-              <option value="annulé">Annulé</option>
-            </select>
+            <p className="text-xs text-gray-500 mb-3">
+              Sélectionnez les badges que les participants doivent avoir pour
+              accéder à cet événement. Si aucun badge n'est sélectionné,
+              l'événement sera ouvert à tous.
+            </p>
+
+            {badges.length === 0 ? (
+              <div className="text-sm text-gray-500 italic">
+                Aucun badge disponible. Créez des badges dans la section Badges.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {badges.map((badge) => (
+                  <label
+                    key={badge.id}
+                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                      formData.badges_requis.includes(badge.id)
+                        ? "bg-green-50 border-green-200"
+                        : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.badges_requis.includes(badge.id)}
+                      onChange={() => handleBadgeToggle(badge.id)}
+                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-white font-bold"
+                      style={{ backgroundColor: badge.couleur }}
+                    >
+                      {badge.icone}
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {badge.nom}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {formData.badges_requis.length > 0 && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <svg
+                    className="w-5 h-5 text-blue-500 mt-0.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">
+                      Accès restreint
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      Seuls les membres ayant au moins un des badges
+                      sélectionnés pourront voir et s'inscrire à cet événement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex space-x-4">
