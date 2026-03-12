@@ -18,6 +18,7 @@ export default function TrancheInscriptionsPage() {
   const [tranche, setTranche] = useState(null);
   const [membres, setMembres] = useState([]);
   const [membresInscrits, setMembresInscrits] = useState([]);
+  const [inscriptionsGlobales, setInscriptionsGlobales] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,48 +30,42 @@ export default function TrancheInscriptionsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-
       // Charger l'événement
       const eventData = await apiService.getEvent(eventId);
       setEvent(eventData);
-
-      // TODO: Charger la tranche horaire réelle
-      // const trancheData = await apiService.getTrancheHoraire(trancheId);
-
-      // MOCK DATA pour la tranche
-      const mockTranche = {
-        id: parseInt(trancheId),
-        nom: "Service du matin",
-        secteur_nom: "Service",
-        date_debut: "2025-01-27T08:00:00",
-        date_fin: "2025-01-27T12:00:00",
-        participants_necessaires: 3,
-        participants_inscrits: 1,
-        couleur: "#3B82F6",
-      };
-      setTranche(mockTranche);
-
+      // Charger la tranche horaire réelle
+      const trancheData = await apiService.getTranche(trancheId);
+      setTranche(trancheData);
       // Charger tous les membres du tenant
       const membresData = await apiService.getMembers();
       const membresFiltered = membresData.filter(
         (m) => m.tenant_id === user.tenant_id
       );
       setMembres(membresFiltered);
+      // Charger les membres déjà inscrits à cette tranche
+      const inscriptionsData = await apiService.getTrancheInscriptions(
+        trancheId
+      );
+      setMembresInscrits(inscriptionsData);
 
-      // TODO: Charger les membres déjà inscrits à cette tranche
-      // const inscriptionsData = await apiService.getInscriptionsTrancheHoraire(trancheId);
-
-      // MOCK DATA pour les inscriptions
-      const mockInscriptions = [
-        {
-          id: 1,
-          membre_id: membresFiltered[0]?.id,
-          nom: membresFiltered[0]?.nom || "Jean Dupont",
-          email: membresFiltered[0]?.email || "jean.dupont@example.com",
-          role: membresFiltered[0]?.role || "membre",
-        },
-      ];
-      setMembresInscrits(mockInscriptions);
+      // Charger les inscriptions globales de tous les membres pour cet événement
+      const inscriptionsGlobalesMap = {};
+      for (const membre of membresFiltered) {
+        try {
+          const inscriptionsMembre = await apiService.getInscriptionsByMembre(
+            membre.id,
+            eventId
+          );
+          inscriptionsGlobalesMap[membre.id] = inscriptionsMembre;
+        } catch (err) {
+          console.error(
+            `Error loading inscriptions for member ${membre.id}:`,
+            err
+          );
+          inscriptionsGlobalesMap[membre.id] = [];
+        }
+      }
+      setInscriptionsGlobales(inscriptionsGlobalesMap);
     } catch (err) {
       setError("Erreur lors du chargement des données");
       console.error("Error loading data:", err);
@@ -81,29 +76,42 @@ export default function TrancheInscriptionsPage() {
 
   // Calculer les statistiques d'inscription pour chaque membre
   const getMemberStats = (membreId) => {
-    // TODO: Récupérer les vraies données depuis l'API
-    // const memberInscriptions = await apiService.getMemberInscriptionsForEvent(eventId, membreId);
+    // Utiliser les inscriptions globales du membre pour cet événement
+    const inscriptionsDuMembre = inscriptionsGlobales[membreId] || [];
 
-    // MOCK DATA - Simuler des inscriptions existantes pour certains membres
-    const mockInscriptions = {
-      [membresInscrits[0]?.membre_id]: {
-        tranches: 2, // Inscrit à 2 tranches au total
-        heures: 7.5, // 7h30 au total
-        details: [
-          { nom: "Service du matin", heures: 4 },
-          { nom: "Préparation cuisine", heures: 3.5 },
-        ],
-      },
+    // Calculer le nombre total de tranches pour ce membre
+    const nombreTranches = inscriptionsDuMembre.length;
+
+    // Calculer les heures totales (basé sur la durée de chaque tranche)
+    let heuresTotales = 0;
+    inscriptionsDuMembre.forEach((inscription) => {
+      if (inscription.date_debut && inscription.date_fin) {
+        const debut = new Date(inscription.date_debut);
+        const fin = new Date(inscription.date_fin);
+        const dureeHeures = (fin - debut) / (1000 * 60 * 60);
+        heuresTotales += dureeHeures;
+      }
+    });
+
+    // Préparer les détails des tranches
+    const details = inscriptionsDuMembre.map((inscription) => {
+      let duree = 0;
+      if (inscription.date_debut && inscription.date_fin) {
+        const debut = new Date(inscription.date_debut);
+        const fin = new Date(inscription.date_fin);
+        duree = (fin - debut) / (1000 * 60 * 60);
+      }
+      return {
+        nom: inscription.tranche_nom || "Tranche",
+        heures: duree,
+      };
+    });
+
+    return {
+      tranches: nombreTranches,
+      heures: Math.round(heuresTotales * 10) / 10, // Arrondir à 1 décimale
+      details: details,
     };
-
-    // Simuler des données pour d'autres membres
-    const memberStats = mockInscriptions[membreId] || {
-      tranches: Math.floor(Math.random() * 4), // 0-3 tranches
-      heures: Math.round((Math.random() * 12 + 1) * 2) / 2, // 1-12.5 heures par tranche de 0.5h
-      details: [],
-    };
-
-    return memberStats;
   };
 
   const formatHeures = (heures) => {
@@ -117,33 +125,34 @@ export default function TrancheInscriptionsPage() {
   };
 
   const handleInscrireMembre = async (membre) => {
+    // Vérifier que l'événement n'est pas annulé
+    if (event.statut === "annulé") {
+      setError("Impossible d'inscrire des membres : cet événement est annulé");
+      return;
+    }
+
     try {
-      // TODO: Implémenter l'inscription réelle
-      // await apiService.inscrireMemberTrancheHoraire(trancheId, membre.id);
+      // Utiliser la vraie API pour inscrire le membre
+      await apiService.inscrireTranche(trancheId, membre.id);
 
-      console.log(
-        "Inscription membre:",
-        membre.nom,
-        "à la tranche:",
-        tranche.nom
+      // Recharger les données d'inscriptions
+      const inscriptionsData = await apiService.getTrancheInscriptions(
+        trancheId
       );
+      setMembresInscrits(inscriptionsData);
 
-      // Ajouter à la liste des inscrits
-      setMembresInscrits((prev) => [
-        ...prev,
-        {
-          id: Date.now(), // ID temporaire
-          membre_id: membre.id,
-          nom: membre.nom,
-          email: membre.email,
-          role: membre.role,
-        },
-      ]);
+      // Recharger les données de la tranche pour mettre à jour le compteur
+      const trancheData = await apiService.getTranche(trancheId);
+      setTranche(trancheData);
 
-      // Mettre à jour le compteur de la tranche
-      setTranche((prev) => ({
+      // Mettre à jour les inscriptions globales du membre
+      const inscriptionsMembre = await apiService.getInscriptionsByMembre(
+        membre.id,
+        eventId
+      );
+      setInscriptionsGlobales((prev) => ({
         ...prev,
-        participants_inscrits: prev.participants_inscrits + 1,
+        [membre.id]: inscriptionsMembre,
       }));
     } catch (err) {
       setError("Erreur lors de l'inscription du membre");
@@ -153,23 +162,27 @@ export default function TrancheInscriptionsPage() {
 
   const handleDesinscrireMembre = async (inscription) => {
     try {
-      // TODO: Implémenter la désinscription réelle
-      // await apiService.desinscrireMemberTrancheHoraire(inscription.id);
+      // Utiliser la vraie API pour désinscrire le membre
+      await apiService.desinscrireTranche(inscription.id);
 
-      console.log(
-        "Désinscription membre:",
-        inscription.nom,
-        "de la tranche:",
-        tranche.nom
+      // Recharger les données d'inscriptions
+      const inscriptionsData = await apiService.getTrancheInscriptions(
+        trancheId
       );
+      setMembresInscrits(inscriptionsData);
 
-      // Retirer de la liste des inscrits
-      setMembresInscrits((prev) => prev.filter((i) => i.id !== inscription.id));
+      // Recharger les données de la tranche pour mettre à jour le compteur
+      const trancheData = await apiService.getTranche(trancheId);
+      setTranche(trancheData);
 
-      // Mettre à jour le compteur de la tranche
-      setTranche((prev) => ({
+      // Mettre à jour les inscriptions globales du membre
+      const inscriptionsMembre = await apiService.getInscriptionsByMembre(
+        inscription.membre_id,
+        eventId
+      );
+      setInscriptionsGlobales((prev) => ({
         ...prev,
-        participants_inscrits: Math.max(0, prev.participants_inscrits - 1),
+        [inscription.membre_id]: inscriptionsMembre,
       }));
     } catch (err) {
       setError("Erreur lors de la désinscription du membre");
@@ -191,11 +204,14 @@ export default function TrancheInscriptionsPage() {
   const membresDisponibles = membres.filter(
     (membre) =>
       !membresInscrits.some((inscrit) => inscrit.membre_id === membre.id) &&
-      membre.nom.toLowerCase().includes(searchTerm.toLowerCase())
+      (membre.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        membre.nom?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const membresInscritsFiltres = membresInscrits.filter((inscrit) =>
-    inscrit.nom.toLowerCase().includes(searchTerm.toLowerCase())
+  const membresInscritsFiltres = membresInscrits.filter(
+    (inscrit) =>
+      inscrit.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inscrit.nom?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -336,7 +352,7 @@ export default function TrancheInscriptionsPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-medium text-gray-900">
-                            {membre.nom}
+                            {membre.prenom} {membre.nom}
                           </p>
                           <p className="text-sm text-gray-600">
                             {membre.email}
@@ -421,7 +437,7 @@ export default function TrancheInscriptionsPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-medium text-gray-900">
-                            {inscription.nom}
+                            {inscription.prenom} {inscription.nom}
                           </p>
                           <p className="text-sm text-gray-600">
                             {inscription.email}
@@ -503,9 +519,6 @@ export default function TrancheInscriptionsPage() {
             <Link href={`/main/events/${eventId}`}>
               <Button variant="secondary">Retour à l'événement</Button>
             </Link>
-            <Button primaryColor={tenant?.primary_color || "#00AF00"}>
-              Envoyer notifications
-            </Button>
           </div>
         </div>
       </Card>

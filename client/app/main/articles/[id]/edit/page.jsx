@@ -104,10 +104,8 @@ export default function EditArticlePage() {
       // Ajouter l'image si une nouvelle est sélectionnée
       if (selectedImage) {
         formDataToSend.append("image", selectedImage);
-      }
-
-      // Indiquer si on garde l'image existante
-      if (existingImageUrl && !selectedImage) {
+      } else if (existingImageUrl) {
+        // Indiquer qu'on garde l'image existante
         formDataToSend.append("keep_existing_image", "true");
       }
 
@@ -206,11 +204,9 @@ export default function EditArticlePage() {
           />
 
           <ImageUpload
-            label="Image de l'article (optionnel)"
-            onChange={handleImageChange}
-            value={imagePreview}
-            maxSize={5 * 1024 * 1024} // 5MB
-            previewClassName="w-full h-64 object-cover rounded-lg"
+            onImageChange={handleImageChange}
+            currentImage={imagePreview}
+            className="mb-6"
           />
 
           <div>

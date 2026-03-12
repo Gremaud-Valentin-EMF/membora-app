@@ -13,6 +13,7 @@
     "dev": "NODE_ENV=development node server.js"
   },
   "dependencies": {
+    "@vercel/blob": "^1.1.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -20,6 +21,7 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
+    "multer": "^2.0.2",
     "pg": "^8.16.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"

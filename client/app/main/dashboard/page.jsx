@@ -7,6 +7,7 @@ import apiService from "../../../lib/api";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function DashboardPage() {
   const { user, tenant } = useAuth();
@@ -42,223 +43,126 @@ export default function DashboardPage() {
       return;
     }
     loadDashboardData();
-  }, [user]);
+  }, [user, viewMode]); // Ajouter viewMode comme dépendance
+
+  // Ajouter un refresh automatique quand la page reprend le focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user && !loading) {
+        console.log(
+          "Refresh automatique au focus - Dashboard:",
+          user.role,
+          "ViewMode:",
+          viewMode
+        );
+        loadDashboardData();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [user, loading, viewMode]); // Ajouter viewMode comme dépendance
+
+  // Refresh automatique toutes les 30 secondes si la page est active
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible" && !loading) {
+        console.log(
+          "Refresh automatique périodique - Dashboard:",
+          user.role,
+          "ViewMode:",
+          viewMode
+        );
+        loadDashboardData();
+      }
+    }, 30000); // 30 secondes
+
+    return () => clearInterval(interval);
+  }, [user, loading, viewMode]); // Ajouter viewMode comme dépendance
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
 
-      // Si view=member, charger les données personnelles pour tous les rôles
-      if (viewMode === "member" || user.role === "membre") {
-        // MOCK DATA pour démonstration - MEMBRE
-        const mockStats = {
-          totalEvents: 12,
-          totalHours: 48,
-          currentInscriptions: 3,
-          badgesObtenus: 2,
-        };
-        setUserStats(mockStats);
+      // Charger les données selon le rôle et la vue
+      if (user.role === "sous-admin" && viewMode !== "member") {
+        // Dashboard sous-admin - charger toutes les stats
+        const [events, members, badges, categories, articles, tranches] =
+          await Promise.all([
+            apiService.getEvents(),
+            apiService.getMembers(),
+            apiService.getBadges(),
+            apiService.getCategories(),
+            apiService.getArticles(),
+            apiService.getTranches(),
+          ]);
+        setUserStats({
+          events: events.length,
+          membres: members.length,
+          badges: badges.length,
+          categories: categories.length,
+          articles: articles.length,
+          tranchesAVenir: tranches.filter((t) => new Date(t.debut) > new Date())
+            .length,
+        });
+      } else {
+        // Dashboard membre, responsable, ou "Mon Espace" (viewMode === "member") - charger les données personnelles
+        const [inscriptions, badges, evenements] = await Promise.all([
+          apiService.getMembreInscriptions(user.id),
+          apiService.getMembreBadges(user.id), // Utiliser getMembreBadges au lieu de getBadges
+          apiService.getEvents(),
+        ]);
 
-        // MOCK DATA pour les inscriptions actuelles
-        const mockInscriptions = [
-          {
-            id: 1,
-            event_id: 1,
-            event_nom: "Soirée de Noël",
-            tranche_id: 1,
-            tranche_nom: "Service du soir",
-            date_debut: new Date(
-              Date.now() + 2 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            date_fin: new Date(
-              Date.now() + 2 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000
-            ).toISOString(),
-            secteur_nom: "Service",
-            couleur: "#3B82F6",
-          },
-          {
-            id: 2,
-            event_id: 2,
-            event_nom: "Mariage Martin",
-            tranche_id: 3,
-            tranche_nom: "Préparation cuisine",
-            date_debut: new Date(
-              Date.now() + 5 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            date_fin: new Date(
-              Date.now() + 5 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000
-            ).toISOString(),
-            secteur_nom: "Cuisine",
-            couleur: "#10B981",
-          },
-        ];
-        setMesInscriptions(mockInscriptions);
+        setMesInscriptions(inscriptions);
+        setMesBadges(badges);
+        setEvenementsAvenir(evenements);
 
-        // MOCK DATA pour les événements à venir
-        const mockEvenements = [
-          {
-            id: 4,
-            nom: "Fête de la musique",
-            date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-            date_fin: new Date(
-              Date.now() + 10 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000
-            ).toISOString(),
-            categorie_nom: "Festival",
-            tranches_disponibles: 5,
-            couleur: "#8B5CF6",
-          },
-        ];
-        setEvenementsAvenir(mockEvenements);
+        // Calculer les stats personnelles
+        setUserStats({
+          totalEvents: inscriptions.length,
+          totalHours: inscriptions.reduce(
+            (acc, i) =>
+              acc + (new Date(i.date_fin) - new Date(i.date_debut)) / 3600000,
+            0
+          ),
+          currentInscriptions: inscriptions.length,
+          badgesObtenus: badges.length,
+        });
 
-        // MOCK DATA pour les badges
-        const mockBadges = [
-          {
-            id: 1,
-            nom: "Bénévole expérimenté",
-            couleur: "#10B981",
-            icone: "🏆",
-            obtenu_le: new Date(
-              Date.now() - 30 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-        ];
-        setMesBadges(mockBadges);
-      } else if (user.role === "responsable") {
-        // MOCK DATA pour démonstration - RESPONSABLE
-        const mockResponsableStats = {
-          evenementsResponsable: 4,
-          tranchesAVenir: 8,
-          membresEquipe: 12,
-        };
-        setResponsableStats(mockResponsableStats);
+        // Charger les données spécifiques pour les responsables
+        if (user.role === "responsable") {
+          try {
+            // Charger les membres pour l'équipe
+            const membresData = await apiService.getMembers();
 
-        // MOCK DATA pour les événements dont ils sont responsables
-        const mockEvenementsResponsable = [
-          {
-            id: 1,
-            nom: "Soirée de Noël",
-            date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-            date_fin: new Date(
-              Date.now() + 2 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000
-            ).toISOString(),
-            statut: "planifié",
-            tranches_total: 6,
-            tranches_completes: 4,
-            couleur: "#3B82F6",
-          },
-          {
-            id: 2,
-            nom: "Mariage Martin",
-            date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-            date_fin: new Date(
-              Date.now() + 5 * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000
-            ).toISOString(),
-            statut: "planifié",
-            tranches_total: 8,
-            tranches_completes: 6,
-            couleur: "#10B981",
-          },
-          {
-            id: 3,
-            nom: "Festival d'été",
-            date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-            date_fin: new Date(
-              Date.now() + 15 * 24 * 60 * 60 * 1000 + 12 * 60 * 60 * 1000
-            ).toISOString(),
-            statut: "planifié",
-            tranches_total: 12,
-            tranches_completes: 8,
-            couleur: "#F59E0B",
-          },
-        ];
-        setEvenementsResponsable(mockEvenementsResponsable);
+            // Charger les événements dont l'utilisateur est responsable
+            const eventsResponsable = evenements.filter(
+              (event) => event.responsable_id === user.id
+            );
+            setEvenementsResponsable(eventsResponsable);
 
-        // MOCK DATA pour les tranches à venir
-        const mockTranchesAVenir = [
-          {
-            id: 1,
-            nom: "Service du soir",
-            event_nom: "Soirée de Noël",
-            date_debut: new Date(
-              Date.now() + 2 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            participants_inscrits: 2,
-            participants_necessaires: 4,
-            secteur: "Service",
-            couleur: "#3B82F6",
-          },
-          {
-            id: 2,
-            nom: "Préparation cuisine",
-            event_nom: "Mariage Martin",
-            date_debut: new Date(
-              Date.now() + 5 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            participants_inscrits: 1,
-            participants_necessaires: 3,
-            secteur: "Cuisine",
-            couleur: "#10B981",
-          },
-          {
-            id: 3,
-            nom: "Bar de nuit",
-            event_nom: "Festival d'été",
-            date_debut: new Date(
-              Date.now() + 15 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            participants_inscrits: 0,
-            participants_necessaires: 2,
-            secteur: "Bar",
-            couleur: "#F59E0B",
-          },
-        ];
-        setTranchesAVenir(mockTranchesAVenir);
+            // Charger les tranches à venir
+            const allTranches = await apiService.getTranches();
+            const tranchesAVenir = allTranches.filter(
+              (t) => new Date(t.debut) > new Date()
+            );
+            setTranchesAVenir(tranchesAVenir);
 
-        // MOCK DATA pour les membres de l'équipe
-        const mockMembresEquipe = [
-          {
-            id: 1,
-            nom: "Jean Dupont",
-            email: "jean@example.com",
-            evenements_participes: 8,
-            heures_total: 32,
-            derniere_participation: new Date(
-              Date.now() - 7 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-          {
-            id: 2,
-            nom: "Marie Martin",
-            email: "marie@example.com",
-            evenements_participes: 12,
-            heures_total: 48,
-            derniere_participation: new Date(
-              Date.now() - 2 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-          {
-            id: 3,
-            nom: "Pierre Durand",
-            email: "pierre@example.com",
-            evenements_participes: 5,
-            heures_total: 20,
-            derniere_participation: new Date(
-              Date.now() - 14 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-        ];
-        setMembresEquipe(mockMembresEquipe);
-      } else if (user.role === "sous-admin") {
-        // MOCK DATA pour démonstration - SOUS-ADMIN
-        const mockStats = {
-          events: 15,
-          membres: 45,
-          badges: 8,
-          categories: 6,
-          articles: 12,
-          tranchesAVenir: 25,
-        };
-        setUserStats(mockStats);
+            // Charger les membres de l'équipe (pour l'instant, tous les membres)
+            setMembresEquipe(membresData);
+
+            // Mettre à jour les stats responsable
+            setResponsableStats({
+              evenementsResponsable: eventsResponsable.length,
+              tranchesAVenir: tranchesAVenir.length,
+              membresEquipe: membresData.length,
+            });
+          } catch (err) {
+            console.error("Error loading responsable data:", err);
+          }
+        }
       }
     } catch (err) {
       setError("Erreur lors du chargement du dashboard");
@@ -293,10 +197,17 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement du dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 mb-2">Chargement du dashboard...</p>
+          <p className="text-sm text-gray-500">
+            {user?.role === "sous-admin"
+              ? "Récupération des statistiques globales..."
+              : user?.role === "responsable"
+              ? "Récupération de vos responsabilités..."
+              : "Récupération de vos données personnelles..."}
+          </p>
         </div>
       </div>
     );
@@ -331,16 +242,18 @@ export default function DashboardPage() {
 
         {/* En-tête du dashboard */}
         <div className="mb-8">
-          <h1
-            className="text-3xl font-bold"
-            style={{ color: tenant?.primary_color || "#00AF00" }}
-          >
-            Mon Espace
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Bienvenue {user?.nom || user?.email}, voici un aperçu de vos
-            activités
-          </p>
+          <div>
+            <h1
+              className="text-3xl font-bold"
+              style={{ color: tenant?.primary_color || "#00AF00" }}
+            >
+              Mon Espace
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Bienvenue {user?.nom || user?.email}, voici un aperçu de vos
+              activités
+            </p>
+          </div>
         </div>
 
         {/* Statistiques principales */}
@@ -398,7 +311,13 @@ export default function DashboardPage() {
 
             {mesInscriptions.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <div className="text-4xl mb-4">📅</div>
+                <Image
+                  src="/icons/calendrier.svg"
+                  alt="Aucune inscription"
+                  width={48}
+                  height={48}
+                  className="mx-auto mb-4 opacity-50"
+                />
                 <p className="text-lg font-medium mb-2">
                   Aucune inscription actuelle
                 </p>
@@ -550,7 +469,10 @@ export default function DashboardPage() {
                     {badge.nom}
                   </h3>
                   <p className="text-xs text-gray-500">
-                    Obtenu le {formatDate(badge.obtenu_le)}
+                    Obtenu le{" "}
+                    {badge.date_attribution
+                      ? formatDate(badge.date_attribution)
+                      : "Date non disponible"}
                   </p>
                 </div>
               ))}
@@ -561,10 +483,16 @@ export default function DashboardPage() {
         {/* Actions rapides */}
         <Card className="mt-6">
           <h2 className="text-xl font-semibold mb-4">Actions rapides</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Link href="/main/events">
               <button className="w-full p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow text-center">
-                <div className="text-2xl mb-2">📅</div>
+                <Image
+                  src="/icons/calendrier.svg"
+                  alt="Voir les événements"
+                  width={32}
+                  height={32}
+                  className="mx-auto mb-2"
+                />
                 <div className="font-medium text-gray-900">
                   Voir les événements
                 </div>
@@ -576,25 +504,19 @@ export default function DashboardPage() {
 
             <Link href="/main/profile">
               <button className="w-full p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow text-center">
-                <div className="text-2xl mb-2">👤</div>
+                <Image
+                  src="/icons/profile.svg"
+                  alt="Mon profil"
+                  width={32}
+                  height={32}
+                  className="mx-auto mb-2"
+                />
                 <div className="font-medium text-gray-900">Mon profil</div>
                 <div className="text-sm text-gray-500">
                   Gérer mes informations
                 </div>
               </button>
             </Link>
-
-            <button className="w-full p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow text-center">
-              <div className="text-2xl mb-2">📊</div>
-              <div className="font-medium text-gray-900">Mes statistiques</div>
-              <div className="text-sm text-gray-500">Voir mon activité</div>
-            </button>
-
-            <button className="w-full p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow text-center">
-              <div className="text-2xl mb-2">🔔</div>
-              <div className="font-medium text-gray-900">Notifications</div>
-              <div className="text-sm text-gray-500">Gérer mes alertes</div>
-            </button>
           </div>
         </Card>
       </div>
@@ -613,16 +535,18 @@ export default function DashboardPage() {
 
         {/* En-tête du dashboard */}
         <div className="mb-8">
-          <h1
-            className="text-3xl font-bold"
-            style={{ color: tenant?.primary_color || "#00AF00" }}
-          >
-            Dashboard Responsable
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Bienvenue {user?.nom || user?.email}, voici un aperçu de vos
-            responsabilités
-          </p>
+          <div>
+            <h1
+              className="text-3xl font-bold"
+              style={{ color: tenant?.primary_color || "#00AF00" }}
+            >
+              Dashboard Responsable
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Bienvenue {user?.nom || user?.email}, voici un aperçu de vos
+              responsabilités
+            </p>
+          </div>
         </div>
 
         {/* Statistiques principales */}
@@ -670,7 +594,15 @@ export default function DashboardPage() {
 
             {evenementsResponsable.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <div className="text-4xl mb-4">📋</div>
+                <div className="mb-4">
+                  <Image
+                    src="/icons/calendrier.svg"
+                    alt="Calendrier"
+                    width={48}
+                    height={48}
+                    className="mx-auto"
+                  />
+                </div>
                 <p className="text-lg font-medium mb-2">
                   Aucun événement à gérer
                 </p>
@@ -752,7 +684,15 @@ export default function DashboardPage() {
 
             {tranchesAVenir.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <div className="text-4xl mb-4">⏰</div>
+                <div className="mb-4">
+                  <Image
+                    src="/icons/horloge.svg"
+                    alt="Horloge"
+                    width={48}
+                    height={48}
+                    className="mx-auto"
+                  />
+                </div>
                 <p className="text-lg font-medium mb-2">
                   Aucune tranche à venir
                 </p>
@@ -808,11 +748,6 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <Link href={`/main/events/${tranche.id}`}>
-                        <button className="px-3 py-1 text-sm bg-orange-100 hover:bg-orange-200 text-orange-600 rounded-lg transition-colors">
-                          Voir détails
-                        </button>
-                      </Link>
                     </div>
                   </div>
                 ))}
@@ -821,81 +756,27 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Membres de mon équipe */}
-        <Card className="mt-6">
-          <h2 className="text-xl font-semibold mb-4">Mon équipe</h2>
-
-          {membresEquipe.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-4">👥</div>
-              <p className="text-lg font-medium mb-2">
-                Aucun membre dans votre équipe
-              </p>
-              <p className="text-sm text-gray-400">
-                Les membres seront ajoutés automatiquement à votre équipe.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {membresEquipe.map((membre) => (
-                <div
-                  key={membre.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">
-                        {membre.nom}
-                      </h3>
-                      <p className="text-sm text-gray-600">{membre.email}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                        <span>
-                          📅 {membre.evenements_participes} événements
-                        </span>
-                        <span>⏰ {membre.heures_total}h total</span>
-                        <span>
-                          🕐 Dernière participation :{" "}
-                          {formatRelativeDate(membre.derniere_participation)}
-                        </span>
-                      </div>
-                    </div>
-                    <Link href={`/main/members/${membre.id}`}>
-                      <button className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors">
-                        Voir profil
-                      </button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
         {/* Actions rapides */}
         <Card className="mt-6">
           <h2 className="text-xl font-semibold mb-4">Actions rapides</h2>
-          <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-1">
             <Link href="/main/events">
               <button className="w-full p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow text-center">
-                <div className="text-2xl mb-2">📅</div>
+                <div className="mb-2">
+                  <Image
+                    src="/icons/calendrier.svg"
+                    alt="Calendrier"
+                    width={32}
+                    height={32}
+                    className="mx-auto"
+                  />
+                </div>
                 <div className="font-medium text-gray-900">
                   Gérer les événements
                 </div>
                 <div className="text-sm text-gray-500">Voir et organiser</div>
               </button>
             </Link>
-
-            <button className="w-full p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow text-center">
-              <div className="text-2xl mb-2">📊</div>
-              <div className="font-medium text-gray-900">Rapports</div>
-              <div className="text-sm text-gray-500">Voir les statistiques</div>
-            </button>
-
-            <button className="w-full p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow text-center">
-              <div className="text-2xl mb-2">🔔</div>
-              <div className="font-medium text-gray-900">Notifications</div>
-              <div className="text-sm text-gray-500">Gérer les alertes</div>
-            </button>
           </div>
         </Card>
       </div>
@@ -913,15 +794,18 @@ export default function DashboardPage() {
 
       {/* En-tête */}
       <div className="mb-8">
-        <h1
-          className="text-3xl font-bold mb-2"
-          style={{ color: tenant?.primary_color || "#00AF00" }}
-        >
-          Dashboard Sous-Admin
-        </h1>
-        <p className="text-gray-600">
-          Vue d'ensemble de la gestion de {tenant?.nom || "votre organisation"}
-        </p>
+        <div>
+          <h1
+            className="text-3xl font-bold mb-2"
+            style={{ color: tenant?.primary_color || "#00AF00" }}
+          >
+            Dashboard Sous-Admin
+          </h1>
+          <p className="text-gray-600">
+            Vue d'ensemble de la gestion de{" "}
+            {tenant?.nom || "votre organisation"}
+          </p>
+        </div>
       </div>
 
       {/* Statistiques principales */}
@@ -1001,27 +885,64 @@ export default function DashboardPage() {
           <Link href="/main/events/create">
             <Button
               primaryColor={tenant?.primary_color || "#00AF00"}
-              className="w-full"
+              className="w-full flex flex-col items-center"
             >
-              ➕ Créer événement
+              <Image
+                src="/icons/calendrier.svg"
+                alt="Créer événement"
+                width={32}
+                height={32}
+                className="mb-2"
+              />
+              Créer événement
             </Button>
           </Link>
 
           <Link href="/main/badges">
-            <Button variant="secondary" className="w-full">
-              🏆 Gérer badges
+            <Button
+              variant="secondary"
+              className="w-full flex flex-col items-center"
+            >
+              <Image
+                src="/icons/badge.svg"
+                alt="Gérer badges"
+                width={32}
+                height={32}
+                className="mb-2"
+              />
+              Gérer badges
             </Button>
           </Link>
 
           <Link href="/main/members">
-            <Button variant="secondary" className="w-full">
-              👥 Gérer membres
+            <Button
+              variant="secondary"
+              className="w-full flex flex-col items-center"
+            >
+              <Image
+                src="/icons/membre.svg"
+                alt="Gérer membres"
+                width={32}
+                height={32}
+                className="mb-2"
+              />
+              Gérer membres
             </Button>
           </Link>
 
           <Link href="/main/articles/create">
-            <Button variant="secondary" className="w-full">
-              📄 Créer article
+            <Button
+              variant="secondary"
+              className="w-full flex flex-col items-center"
+            >
+              <Image
+                src="/icons/article.svg"
+                alt="Créer article"
+                width={32}
+                height={32}
+                className="mb-2"
+              />
+              Créer article
             </Button>
           </Link>
         </div>

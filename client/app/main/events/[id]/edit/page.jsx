@@ -26,7 +26,8 @@ export default function EditEventPage() {
     date_fin: "",
     categorie_id: "",
     tenant_id: user?.tenant_id,
-    badges_requis: [],
+    badges_requis: [], // Initialiser comme tableau vide
+    has_planning: true, // Utiliser directement has_planning
   });
 
   useEffect(() => {
@@ -62,6 +63,7 @@ export default function EditEventPage() {
         categorie_id: eventData.categorie_id?.toString() || "",
         tenant_id: eventData.tenant_id,
         badges_requis: eventData.badges_requis || [], // Charger les badges existants
+        has_planning: eventData.has_planning || true, // Charger l'état de planning
       });
 
       const filteredCategories = categoriesData.filter(
@@ -107,12 +109,17 @@ export default function EditEventPage() {
   };
 
   const handleBadgeToggle = (badgeId) => {
-    setFormData((prev) => ({
-      ...prev,
-      badges_requis: prev.badges_requis.includes(badgeId)
-        ? prev.badges_requis.filter((id) => id !== badgeId)
-        : [...prev.badges_requis, badgeId],
-    }));
+    setFormData((prev) => {
+      const currentBadges = Array.isArray(prev.badges_requis)
+        ? prev.badges_requis
+        : [];
+      return {
+        ...prev,
+        badges_requis: currentBadges.includes(badgeId)
+          ? currentBadges.filter((id) => id !== badgeId)
+          : [...currentBadges, badgeId],
+      };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -240,81 +247,117 @@ export default function EditEventPage() {
             </select>
           </div>
 
-          {/* Section des badges requis */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Badges requis (optionnel)
+          {/* Case à cocher pour événement social */}
+          <div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="has_planning"
+                checked={!formData.has_planning}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    has_planning: !e.target.checked,
+                  })
+                }
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  Événement social (sans planning)
+                </span>
+                <p className="text-xs text-gray-500">
+                  Si coché, cet événement n'aura pas de planning de tranches
+                  horaires
+                </p>
+              </div>
             </label>
-            <p className="text-xs text-gray-500 mb-3">
-              Sélectionnez les badges que les participants doivent avoir pour
-              accéder à cet événement. Si aucun badge n'est sélectionné,
-              l'événement sera ouvert à tous.
-            </p>
-
-            {badges.length === 0 ? (
-              <div className="text-sm text-gray-500 italic">
-                Aucun badge disponible. Créez des badges dans la section Badges.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {badges.map((badge) => (
-                  <label
-                    key={badge.id}
-                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                      formData.badges_requis.includes(badge.id)
-                        ? "bg-green-50 border-green-200"
-                        : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.badges_requis.includes(badge.id)}
-                      onChange={() => handleBadgeToggle(badge.id)}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                    />
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-white font-bold"
-                      style={{ backgroundColor: badge.couleur }}
-                    >
-                      {badge.icone}
-                    </div>
-                    <span className="text-sm font-medium text-gray-900">
-                      {badge.nom}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {formData.badges_requis.length > 0 && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <svg
-                    className="w-5 h-5 text-blue-500 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <div>
-                    <p className="text-sm font-medium text-blue-800">
-                      Accès restreint
-                    </p>
-                    <p className="text-xs text-blue-600">
-                      Seuls les membres ayant au moins un des badges
-                      sélectionnés pourront voir et s'inscrire à cet événement.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Section des badges requis - seulement pour les événements avec planning */}
+          {formData.has_planning && (
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Badges requis (optionnel)
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Sélectionnez les badges que les participants doivent avoir pour
+                accéder à cet événement. Si aucun badge n'est sélectionné,
+                l'événement sera ouvert à tous.
+              </p>
+
+              {badges.length === 0 ? (
+                <div className="text-sm text-gray-500 italic">
+                  Aucun badge disponible. Créez des badges dans la section
+                  Badges.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {badges.map((badge) => (
+                    <label
+                      key={badge.id}
+                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                        Array.isArray(formData.badges_requis) &&
+                        formData.badges_requis.includes(badge.id)
+                          ? "bg-green-50 border-green-200"
+                          : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={
+                          Array.isArray(formData.badges_requis) &&
+                          formData.badges_requis.includes(badge.id)
+                        }
+                        onChange={() => handleBadgeToggle(badge.id)}
+                        className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      />
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-white font-bold"
+                        style={{ backgroundColor: badge.couleur }}
+                      >
+                        {badge.icone}
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">
+                        {badge.nom}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {Array.isArray(formData.badges_requis) &&
+                formData.badges_requis.length > 0 && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <svg
+                        className="w-5 h-5 text-blue-500 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-medium text-blue-800">
+                          Accès restreint
+                        </p>
+                        <p className="text-xs text-blue-600">
+                          Seuls les membres ayant au moins un des badges
+                          sélectionnés pourront voir et s'inscrire à cet
+                          événement.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+            </div>
+          )}
 
           <div className="flex space-x-4">
             <Button

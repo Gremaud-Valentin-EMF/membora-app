@@ -1,9 +1,10 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  process.env.NEXT_PUBLIC_API_URL || "/api";
 
 class ApiService {
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.baseURL = API_BASE_URL || "http://localhost:3001/api";
+    console.log("API Service initialized with baseURL:", this.baseURL);
   }
 
   async request(endpoint, options = {}) {
@@ -12,7 +13,7 @@ class ApiService {
     const config = {
       headers: {
         "Content-Type": "application/json",
-        ...options.headers,
+        ...(options.headers || {}),
       },
       ...options,
     };
@@ -52,17 +53,29 @@ class ApiService {
 
   // Méthodes POST
   async post(endpoint, data) {
+    // Si data est un FormData, ne pas le stringifier
+    const body = data instanceof FormData ? data : JSON.stringify(data);
+    const headers =
+      data instanceof FormData ? {} : { "Content-Type": "application/json" };
+
     return this.request(endpoint, {
       method: "POST",
-      body: JSON.stringify(data),
+      body,
+      headers,
     });
   }
 
   // Méthodes PUT
   async put(endpoint, data) {
+    // Si data est un FormData, ne pas le stringifier
+    const body = data instanceof FormData ? data : JSON.stringify(data);
+    const headers =
+      data instanceof FormData ? {} : { "Content-Type": "application/json" };
+
     return this.request(endpoint, {
       method: "PUT",
-      body: JSON.stringify(data),
+      body,
+      headers,
     });
   }
 
@@ -89,16 +102,43 @@ class ApiService {
     return this.get(`/evenements/${id}`);
   }
 
-  async createEvent(eventData) {
-    return this.post("/evenements", eventData);
+  async createEvent(data) {
+    return this.post("/evenements", data);
   }
 
-  async updateEvent(id, eventData) {
-    return this.put(`/evenements/${id}`, eventData);
+  async updateEvent(id, data) {
+    return this.put(`/evenements/${id}`, data);
   }
 
   async deleteEvent(id) {
     return this.delete(`/evenements/${id}`);
+  }
+
+  async cancelEvent(id) {
+    return this.put(`/evenements/${id}/annuler`, {});
+  }
+
+  async reactivateEvent(id) {
+    return this.put(`/evenements/${id}/reactiver`, {});
+  }
+
+  // Méthodes pour l'inscription directe aux événements sociaux
+  async inscrireEvent(eventId, membreId) {
+    return this.post(`/evenements/${eventId}/inscrire`, {
+      membre_id: membreId,
+    });
+  }
+
+  async desinscrireEvent(eventId, membreId) {
+    return this.delete(`/evenements/${eventId}/inscrire/${membreId}`);
+  }
+
+  async getEventParticipants(eventId) {
+    return this.get(`/evenements/${eventId}/participants`);
+  }
+
+  async getUserEventInscription(eventId, membreId) {
+    return this.get(`/evenements/${eventId}/inscription/${membreId}`);
   }
 
   // Méthodes pour les membres
@@ -224,6 +264,110 @@ class ApiService {
 
   async deleteTenant(id) {
     return this.delete(`/tenants/${id}`);
+  }
+
+  // Méthodes pour les badges
+  async getBadges() {
+    return this.get("/badges");
+  }
+
+  async getBadge(id) {
+    return this.get(`/badges/${id}`);
+  }
+
+  async createBadge(badgeData) {
+    return this.post("/badges", badgeData);
+  }
+
+  async updateBadge(id, badgeData) {
+    return this.put(`/badges/${id}`, badgeData);
+  }
+
+  async deleteBadge(id) {
+    return this.delete(`/badges/${id}`);
+  }
+
+  async getBadgeAttributions(badgeId) {
+    return this.get(`/badges/${badgeId}/attributions`);
+  }
+
+  async attribuerBadge(badgeId, membreId) {
+    return this.post(`/badges/${badgeId}/attribuer`, { membre_id: membreId });
+  }
+
+  async retirerAttribution(attributionId) {
+    return this.delete(`/badges/attributions/${attributionId}`);
+  }
+
+  async getMembreBadges(membreId) {
+    return this.get(`/badges/membre/${membreId}`);
+  }
+
+  // Méthodes pour les tranches horaires
+  async getTranches() {
+    return this.get("/tranches");
+  }
+
+  async getTranche(id) {
+    return this.get(`/tranches/${id}`);
+  }
+
+  async createTranche(trancheData) {
+    return this.post("/tranches", trancheData);
+  }
+
+  async updateTranche(id, trancheData) {
+    return this.put(`/tranches/${id}`, trancheData);
+  }
+
+  async deleteTranche(id) {
+    return this.delete(`/tranches/${id}`);
+  }
+
+  async getTranchesByEvenement(evenementId) {
+    return this.get(`/tranches/evenement/${evenementId}`);
+  }
+
+  async getTrancheInscriptions(trancheId) {
+    return this.get(`/tranches/${trancheId}/inscriptions`);
+  }
+
+  async inscrireTranche(trancheId, membreId = null) {
+    const data = membreId ? { membre_id: membreId } : {};
+    return this.post(`/tranches/${trancheId}/inscrire`, data);
+  }
+
+  async desinscrireTranche(inscriptionId) {
+    return this.delete(`/tranches/inscriptions/${inscriptionId}`);
+  }
+
+  // Méthodes pour les catégories d'événements
+  async getEventCategories() {
+    return this.get("/event-categories");
+  }
+
+  async getEventCategory(id) {
+    return this.get(`/event-categories/${id}`);
+  }
+
+  async createEventCategory(categoryData) {
+    return this.post("/event-categories", categoryData);
+  }
+
+  async updateEventCategory(id, categoryData) {
+    return this.put(`/event-categories/${id}`, categoryData);
+  }
+
+  async deleteEventCategory(id) {
+    return this.delete(`/event-categories/${id}`);
+  }
+
+  async getMembreInscriptions(membreId) {
+    return this.get(`/tranches/membre/${membreId}`);
+  }
+
+  async getInscriptionsByMembre(membreId, evenementId) {
+    return this.get(`/tranches/evenement/${evenementId}/membre/${membreId}`);
   }
 }
 

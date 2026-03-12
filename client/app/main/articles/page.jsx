@@ -7,6 +7,7 @@ import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import Input from "../../../components/ui/Input";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function ArticlesPage() {
   const { user, tenant } = useAuth();
@@ -200,14 +201,27 @@ export default function ArticlesPage() {
                         {article.titre}
                       </h3>
                       <p className="text-sm text-gray-600 mb-2">
-                        📅{" "}
+                        <Image
+                          src="/icons/calendrier.svg"
+                          alt="Date de publication"
+                          width={16}
+                          height={16}
+                          className="inline mr-1"
+                        />
                         {formatDate(
                           article.date_publication || article.created_at
                         )}
                       </p>
                       {article.auteur_nom && (
                         <p className="text-sm text-gray-500 mb-2">
-                          ✍️ Par {article.auteur_nom}
+                          <Image
+                            src="/icons/auteur.svg"
+                            alt="Auteur"
+                            width={16}
+                            height={16}
+                            className="inline mr-1"
+                          />
+                          Par {article.auteur_nom}
                         </p>
                       )}
                       <p className="text-gray-600 line-clamp-2">
@@ -244,46 +258,108 @@ export default function ArticlesPage() {
 
                   <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
                     <Link href={`/main/articles/${article.id}/edit`}>
-                      <Button variant="secondary" size="sm">
-                        Modifier
-                      </Button>
+                      <button
+                        className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
+                        title="Modifier l'article"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </button>
                     </Link>
 
                     {article.etat === "publié" ? (
-                      <Button
-                        variant="secondary"
-                        size="sm"
+                      <button
+                        className="p-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-600 rounded-lg transition-colors"
                         onClick={() => handleArchiveArticle(article.id)}
+                        title="Archiver l'article"
                       >
-                        Archiver
-                      </Button>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                          />
+                        </svg>
+                      </button>
                     ) : article.etat === "archivé" ? (
-                      <Button
-                        variant="secondary"
-                        size="sm"
+                      <button
+                        className="p-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-colors"
                         onClick={() => handleUnarchiveArticle(article.id)}
+                        title="Désarchiver l'article"
                       >
-                        Désarchiver
-                      </Button>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                      </button>
                     ) : null}
 
-                    <Button
-                      variant="secondary"
-                      size="sm"
+                    <button
+                      className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
                       onClick={() => handleDeleteArticle(article.id)}
-                      className="text-red-600 hover:text-red-700"
+                      title="Supprimer l'article"
                     >
-                      Supprimer
-                    </Button>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
 
                     {article.etat === "publié" && (
                       <Link href={`/articles/${article.id}`} target="_blank">
-                        <Button
-                          size="sm"
-                          primaryColor={tenant?.primary_color || "#00AF00"}
+                        <button
+                          className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
+                          title="Voir en public"
                         >
-                          Voir en public
-                        </Button>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                            />
+                          </svg>
+                        </button>
                       </Link>
                     )}
                   </div>

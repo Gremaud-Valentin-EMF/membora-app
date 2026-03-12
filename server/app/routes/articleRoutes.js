@@ -3,6 +3,10 @@ const router = express.Router();
 const articleController = require("../controllers/articleController");
 const auth = require("../middlewares/authMiddleware");
 const role = require("../middlewares/roleMiddleware");
+const {
+  uploadImage,
+  handleUploadError,
+} = require("../middlewares/uploadMiddleware");
 
 /**
  * @swagger
@@ -161,8 +165,22 @@ router.get("/public/:id", articleController.getPublicById);
 // Routes authentifiées
 router.get("/", auth, articleController.getAll);
 router.get("/:id", auth, articleController.getById);
-router.post("/", auth, role(["sous-admin"]), articleController.create);
-router.put("/:id", auth, role(["sous-admin"]), articleController.update);
+router.post(
+  "/",
+  auth,
+  role(["sous-admin"]),
+  uploadImage,
+  handleUploadError,
+  articleController.create
+);
+router.put(
+  "/:id",
+  auth,
+  role(["sous-admin"]),
+  uploadImage,
+  handleUploadError,
+  articleController.update
+);
 router.delete("/:id", auth, role(["sous-admin"]), articleController.delete);
 router.post(
   "/:id/archiver",

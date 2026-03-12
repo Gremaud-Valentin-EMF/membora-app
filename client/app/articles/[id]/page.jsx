@@ -27,10 +27,11 @@ export default function ArticleDetailPage() {
     try {
       setLoading(true);
 
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
       // Charger l'article
-      const articleResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/articles/public/${id}`
-      );
+      const articleResponse = await fetch(`${apiUrl}/articles/public/${id}`);
       if (!articleResponse.ok) {
         throw new Error("Article non trouvé");
       }
@@ -40,7 +41,7 @@ export default function ArticleDetailPage() {
       // Charger les données de l'auteur
       if (articleData.auteur_id) {
         const authorResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/membres/public/${articleData.auteur_id}`
+          `${apiUrl}/membres/public/${articleData.auteur_id}`
         );
         if (authorResponse.ok) {
           const authorData = await authorResponse.json();

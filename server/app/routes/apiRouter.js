@@ -9,6 +9,9 @@ const articleRoutes = require("./articleRoutes");
 const categorieRoutes = require("./categorieRoutes");
 const participationRoutes = require("./participationRoutes");
 const tenantRoutes = require("./tenantRoutes");
+const badgeRoutes = require("./badgeRoutes");
+const trancheRoutes = require("./trancheRoutes");
+const eventCategoryRoutes = require("./eventCategoryRoutes");
 
 router.use("/auth", authRoutes);
 router.use("/membres", membreRoutes);
@@ -17,5 +20,8 @@ router.use("/articles", articleRoutes);
 router.use("/categories", categorieRoutes);
 router.use("/participations", participationRoutes);
 router.use("/tenants", tenantRoutes);
+router.use("/badges", badgeRoutes);
+router.use("/tranches", trancheRoutes);
+router.use("/event-categories", eventCategoryRoutes);
 
 module.exports = router;

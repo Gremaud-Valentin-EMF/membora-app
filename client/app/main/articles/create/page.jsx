@@ -131,11 +131,9 @@ export default function CreateArticlePage() {
           />
 
           <ImageUpload
-            label="Image de l'article (optionnel)"
-            onChange={handleImageChange}
-            value={imagePreview}
-            maxSize={5 * 1024 * 1024} // 5MB
-            previewClassName="w-full h-64 object-cover rounded-lg"
+            onImageChange={handleImageChange}
+            currentImage={imagePreview}
+            className="mb-6"
           />
 
           <div>

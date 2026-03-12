@@ -7,6 +7,7 @@ import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import Input from "../../../components/ui/Input";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function EventsPage() {
   const { user, tenant } = useAuth();
@@ -203,19 +204,47 @@ export default function EventsPage() {
                       {event.nom}
                     </h3>
                     <p className="text-sm text-gray-600 mb-1">
-                      🕐 Début: {formatDate(event.date_formatted || event.date)}
+                      <Image
+                        src="/icons/horloge.svg"
+                        alt="Début"
+                        width={16}
+                        height={16}
+                        className="inline mr-1"
+                      />
+                      Début: {formatDate(event.date_formatted || event.date)}
                     </p>
                     {(event.date_fin_formatted || event.date_fin) && (
                       <p className="text-sm text-gray-600 mb-2">
-                        🕑 Fin:{" "}
+                        <Image
+                          src="/icons/horloge.svg"
+                          alt="Fin"
+                          width={16}
+                          height={16}
+                          className="inline mr-1"
+                        />
+                        Fin:{" "}
                         {formatDate(event.date_fin_formatted || event.date_fin)}
                       </p>
                     )}
                     <p className="text-sm text-gray-500">
-                      📂 {getCategoryName(event.categorie_id)}
+                      <Image
+                        src="/icons/categorie.svg"
+                        alt="Catégorie"
+                        width={16}
+                        height={16}
+                        className="inline mr-1"
+                      />
+                      {getCategoryName(event.categorie_id)}
                     </p>
                     <p className="text-sm text-gray-500">
-                      📊 Statut: {event.statut}
+                      <Image
+                        src="/icons/status.svg"
+                        alt="Statut"
+                        width={16}
+                        height={16}
+                        className="inline mr-1"
+                      />
+                      Statut: {event.statut}
                     </p>
 
                     {/* Affichage des badges requis */}
